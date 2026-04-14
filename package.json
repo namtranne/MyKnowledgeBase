@@ -1,0 +1,47 @@
+{
+  "name": "personal-docs-site",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "docusaurus": "docusaurus",
+    "start": "docusaurus build && docusaurus serve --host 0.0.0.0",
+    "dev": "docusaurus start --host 0.0.0.0",
+    "build": "docusaurus build",
+    "serve": "docusaurus serve --host 0.0.0.0",
+    "clear": "docusaurus clear",
+    "deploy": "docusaurus build && git checkout gh-pages && find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'node_modules' ! -name 'build' -exec rm -rf {} + && cp -r build/* . && touch .nojekyll && printf 'node_modules/\\nbuild/\\n.docusaurus/\\n.DS_Store\\n' > .gitignore && git add -A && git commit -m 'Deploy' && git push origin gh-pages && git checkout main"
+  },
+  "dependencies": {
+    "@docusaurus/core": "3.10.0",
+    "@docusaurus/preset-classic": "3.10.0",
+    "@docusaurus/theme-mermaid": "3.10.0",
+    "@easyops-cn/docusaurus-search-local": "^0.46.0",
+    "prism-react-renderer": "^2.3.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0"
+  },
+  "devDependencies": {
+    "@docusaurus/module-type-aliases": "3.10.0",
+    "@docusaurus/types": "3.10.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "webpackbar": "7.0.0"
+    }
+  },
+  "browserslist": {
+    "production": [
+      ">0.5%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
