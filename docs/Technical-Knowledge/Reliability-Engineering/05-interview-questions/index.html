@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-Technical-Knowledge/Reliability-Engineering/interview-questions" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.0">
+<title data-rh="true">05 — Interview Questions | Knowledge Base</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://github.aus.thenational.com/pages/p016614/DOC/docs/Technical-Knowledge/Reliability-Engineering/05-interview-questions"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="05 — Interview Questions | Knowledge Base"><meta data-rh="true" name="description" content="This chapter contains scenario-based, design, and conceptual interview questions covering all reliability engineering topics. Each question includes a detailed model answer at senior-engineer depth."><meta data-rh="true" property="og:description" content="This chapter contains scenario-based, design, and conceptual interview questions covering all reliability engineering topics. Each question includes a detailed model answer at senior-engineer depth."><link data-rh="true" rel="canonical" href="https://github.aus.thenational.com/pages/p016614/DOC/docs/Technical-Knowledge/Reliability-Engineering/05-interview-questions"><link data-rh="true" rel="alternate" href="https://github.aus.thenational.com/pages/p016614/DOC/docs/Technical-Knowledge/Reliability-Engineering/05-interview-questions" hreflang="en"><link data-rh="true" rel="alternate" href="https://github.aus.thenational.com/pages/p016614/DOC/docs/Technical-Knowledge/Reliability-Engineering/05-interview-questions" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Reliability Engineering","item":"https://github.aus.thenational.com/pages/p016614/DOC/docs/Technical-Knowledge/Reliability-Engineering/"},{"@type":"ListItem","position":2,"name":"05 — Interview Questions","item":"https://github.aus.thenational.com/pages/p016614/DOC/docs/Technical-Knowledge/Reliability-Engineering/05-interview-questions"}]}</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous"><link rel="stylesheet" href="/pages/p016614/DOC/assets/css/styles.b1f8b75d.css">
+<script src="/pages/p016614/DOC/assets/js/runtime~main.2e2ce424.js" defer="defer"></script>
+<script src="/pages/p016614/DOC/assets/js/main.ada4b314.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>document.documentElement.setAttribute("data-theme","dark"),document.documentElement.setAttribute("data-theme-choice","dark"),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><div role="region" aria-label="Skip to main content"><a class="skipToContent_vIG2" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/pages/p016614/DOC/"><b class="navbar__title text--truncate">⚡ Knowledge Base</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/pages/p016614/DOC/docs/intro">📚 Docs</a><a class="navbar__item navbar__link" href="/pages/p016614/DOC/dsa-roadmap">🏋️ DSA Roadmap</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><div class="navbarSearchContainer_mYCh"><div class="navbar__search searchBarContainer_InZP" dir="ltr"><input placeholder="Search" aria-label="Search" class="navbar__search-input" value=""><div class="loadingRing_UlwO searchBarLoadingRing_PUUg"><div></div><div></div><div></div><div></div></div></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_EbjO"><div class="docsWrapper_eOKv"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_trxm" type="button"></button><div class="docRoot_yQcC"><aside class="theme-doc-sidebar-container docSidebarContainer_Qgcl"><div class="sidebarViewport_pyHp"><div class="sidebar_HbzU"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_I9fe"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/pages/p016614/DOC/docs/intro"><span title="Welcome" class="linkLabel_mnDl">Welcome</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_f9Sx menu__link menu__link--sublist" href="/pages/p016614/DOC/docs/Books/"><span title="Books" class="categoryLinkLabel_psB8">Books</span></a><button aria-label="Expand sidebar category &#x27;Books&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_f9Sx menu__link menu__link--sublist menu__link--sublist-caret menu__link--active" role="button" aria-expanded="true" href="/pages/p016614/DOC/docs/Technical-Knowledge/Kafka/"><span title="Technical Knowledge" class="categoryLinkLabel_psB8">Technical Knowledge</span></a></div><ul class="menu__list"><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_f9Sx menu__link menu__link--sublist" tabindex="0" href="/pages/p016614/DOC/docs/Technical-Knowledge/Kafka/"><span title="Kafka" class="categoryLinkLabel_psB8">Kafka</span></a><button aria-label="Expand sidebar category &#x27;Kafka&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_f9Sx menu__link menu__link--sublist" tabindex="0" href="/pages/p016614/DOC/docs/Technical-Knowledge/AWS/"><span title="AWS" class="categoryLinkLabel_psB8">AWS</span></a><button aria-label="Expand sidebar category &#x27;AWS&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_f9Sx menu__link menu__link--sublist" tabindex="0" href="/pages/p016614/DOC/docs/Technical-Knowledge/Kubernetes/"><span title="Kubernetes Learning Path" class="categoryLinkLabel_psB8">Kubernetes Learning Path</span></a><button aria-label="Expand sidebar category &#x27;Kubernetes Learning Path&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_f9Sx menu__link menu__link--sublist" tabindex="0" href="/pages/p016614/DOC/docs/Technical-Knowledge/Database/"><span title="Database" class="categoryLinkLabel_psB8">Database</span></a><button aria-label="Expand sidebar category &#x27;Database&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_f9Sx menu__link menu__link--sublist" tabindex="0" href="/pages/p016614/DOC/docs/Technical-Knowledge/Operating-Systems/"><span title="Operating Systems" class="categoryLinkLabel_psB8">Operating Systems</span></a><button aria-label="Expand sidebar category &#x27;Operating Systems&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_f9Sx menu__link menu__link--sublist" tabindex="0" href="/pages/p016614/DOC/docs/Technical-Knowledge/Networking/"><span title="Networking" class="categoryLinkLabel_psB8">Networking</span></a><button aria-label="Expand sidebar category &#x27;Networking&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_f9Sx menu__link menu__link--sublist" tabindex="0" href="/pages/p016614/DOC/docs/Technical-Knowledge/System-Design/"><span title="System Design Patterns" class="categoryLinkLabel_psB8">System Design Patterns</span></a><button aria-label="Expand sidebar category &#x27;System Design Patterns&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_f9Sx menu__link menu__link--sublist" tabindex="0" href="/pages/p016614/DOC/docs/Technical-Knowledge/Security/"><span title="Security" class="categoryLinkLabel_psB8">Security</span></a><button aria-label="Expand sidebar category &#x27;Security&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_f9Sx menu__link menu__link--sublist" tabindex="0" href="/pages/p016614/DOC/docs/Technical-Knowledge/Software-Engineering/"><span title="Software Engineering" class="categoryLinkLabel_psB8">Software Engineering</span></a><button aria-label="Expand sidebar category &#x27;Software Engineering&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_f9Sx menu__link menu__link--sublist menu__link--active" tabindex="0" href="/pages/p016614/DOC/docs/Technical-Knowledge/Reliability-Engineering/"><span title="Reliability Engineering" class="categoryLinkLabel_psB8">Reliability Engineering</span></a><button aria-label="Collapse sidebar category &#x27;Reliability Engineering&#x27;" aria-expanded="true" type="button" class="clean-btn menu__caret"></button></div><ul class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-3 menu__list-item"><a class="menu__link" tabindex="0" href="/pages/p016614/DOC/docs/Technical-Knowledge/Reliability-Engineering/01-sre-fundamentals"><span title="01 — SRE Fundamentals" class="linkLabel_mnDl">01 — SRE Fundamentals</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-3 menu__list-item"><a class="menu__link" tabindex="0" href="/pages/p016614/DOC/docs/Technical-Knowledge/Reliability-Engineering/02-resilience-patterns"><span title="02 — Resilience Patterns" class="linkLabel_mnDl">02 — Resilience Patterns</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-3 menu__list-item"><a class="menu__link" tabindex="0" href="/pages/p016614/DOC/docs/Technical-Knowledge/Reliability-Engineering/03-rate-limiting"><span title="03 — Rate Limiting" class="linkLabel_mnDl">03 — Rate Limiting</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-3 menu__list-item"><a class="menu__link" tabindex="0" href="/pages/p016614/DOC/docs/Technical-Knowledge/Reliability-Engineering/04-incident-management-dr"><span title="04 — Incident Management &amp; DR" class="linkLabel_mnDl">04 — Incident Management &amp; DR</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-3 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/pages/p016614/DOC/docs/Technical-Knowledge/Reliability-Engineering/05-interview-questions"><span title="05 — Interview Questions" class="linkLabel_mnDl">05 — Interview Questions</span></a></li></ul></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_f9Sx menu__link menu__link--sublist" tabindex="0" href="/pages/p016614/DOC/docs/Technical-Knowledge/Observability/"><span title="Observability" class="categoryLinkLabel_psB8">Observability</span></a><button aria-label="Expand sidebar category &#x27;Observability&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_f9Sx menu__link menu__link--sublist" tabindex="0" href="/pages/p016614/DOC/docs/Technical-Knowledge/Spring-Framework/"><span title="Spring Framework" class="categoryLinkLabel_psB8">Spring Framework</span></a><button aria-label="Expand sidebar category &#x27;Spring Framework&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_f9Sx menu__link menu__link--sublist" tabindex="0" href="/pages/p016614/DOC/docs/Technical-Knowledge/CICD-DevOps/"><span title="CI/CD &amp; DevOps" class="categoryLinkLabel_psB8">CI/CD &amp; DevOps</span></a><button aria-label="Expand sidebar category &#x27;CI/CD &amp; DevOps&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_f9Sx menu__link menu__link--sublist" tabindex="0" href="/pages/p016614/DOC/docs/Technical-Knowledge/Behavioral-Leadership/"><span title="Behavioral &amp; Leadership" class="categoryLinkLabel_psB8">Behavioral &amp; Leadership</span></a><button aria-label="Expand sidebar category &#x27;Behavioral &amp; Leadership&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li></ul></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_f9Sx menu__link menu__link--sublist" href="/pages/p016614/DOC/docs/category/dsa-foundations"><span title="DSA Foundations" class="categoryLinkLabel_psB8">DSA Foundations</span></a><button aria-label="Expand sidebar category &#x27;DSA Foundations&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_f9Sx menu__link menu__link--sublist" href="/pages/p016614/DOC/docs/category/dsa-training"><span title="DSA Training" class="categoryLinkLabel_psB8">DSA Training</span></a><button aria-label="Expand sidebar category &#x27;DSA Training&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li></ul></nav><button type="button" title="Collapse sidebar" aria-label="Collapse sidebar" class="button button--secondary button--outline collapseSidebarButton_plDD"><svg width="20" height="20" aria-hidden="true" class="collapseSidebarButtonIcon_TQ6L"><g fill="#7a7a7a"><path d="M9.992 10.023c0 .2-.062.399-.172.547l-4.996 7.492a.982.982 0 01-.828.454H1c-.55 0-1-.453-1-1 0-.2.059-.403.168-.551l4.629-6.942L.168 3.078A.939.939 0 010 2.528c0-.548.45-.997 1-.997h2.996c.352 0 .649.18.828.45L9.82 9.472c.11.148.172.347.172.55zm0 0"></path><path d="M19.98 10.023c0 .2-.058.399-.168.547l-4.996 7.492a.987.987 0 01-.828.454h-3c-.547 0-.996-.453-.996-1 0-.2.059-.403.168-.551l4.625-6.942-4.625-6.945a.939.939 0 01-.168-.55 1 1 0 01.996-.997h3c.348 0 .649.18.828.45l4.996 7.492c.11.148.168.347.168.55zm0 0"></path></g></svg></button></div></div></aside><main class="docMainContainer_UJrm"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_aT5_"><div class="docItemContainer_vDWk"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_O3qN" aria-label="Breadcrumbs"><ul class="breadcrumbs"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/pages/p016614/DOC/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_ULIQ"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item"><span class="breadcrumbs__link">Technical Knowledge</span></li><li class="breadcrumbs__item"><a class="breadcrumbs__link" href="/pages/p016614/DOC/docs/Technical-Knowledge/Reliability-Engineering/"><span>Reliability Engineering</span></a></li><li class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link">05 — Interview Questions</span></li></ul></nav><div class="tocCollapsible_m57I theme-doc-toc-mobile tocMobile_OQh_"><button type="button" class="clean-btn tocCollapsibleButton_nCMg">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>🎯 Reliability Engineering — Interview Questions</h1></header>
+<p>This chapter contains scenario-based, design, and conceptual interview questions covering all reliability engineering topics. Each question includes a detailed model answer at senior-engineer depth.</p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Ab5Z" id="quick-reference-tables">Quick Reference Tables<a href="#quick-reference-tables" class="hash-link" aria-label="Direct link to Quick Reference Tables" title="Direct link to Quick Reference Tables" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="nines-table">Nines Table<a href="#nines-table" class="hash-link" aria-label="Direct link to Nines Table" title="Direct link to Nines Table" translate="no">​</a></h3>
+<table><thead><tr><th style="text-align:center">Availability</th><th style="text-align:center">Nines</th><th style="text-align:center">Downtime/Year</th><th style="text-align:center">Downtime/Month</th><th style="text-align:center">Downtime/Week</th></tr></thead><tbody><tr><td style="text-align:center">99%</td><td style="text-align:center">2</td><td style="text-align:center">3.65 days</td><td style="text-align:center">7.31 hours</td><td style="text-align:center">1.68 hours</td></tr><tr><td style="text-align:center">99.9%</td><td style="text-align:center">3</td><td style="text-align:center">8.76 hours</td><td style="text-align:center">43.83 min</td><td style="text-align:center">10.08 min</td></tr><tr><td style="text-align:center">99.95%</td><td style="text-align:center">3.5</td><td style="text-align:center">4.38 hours</td><td style="text-align:center">21.92 min</td><td style="text-align:center">5.04 min</td></tr><tr><td style="text-align:center">99.99%</td><td style="text-align:center">4</td><td style="text-align:center">52.60 min</td><td style="text-align:center">4.38 min</td><td style="text-align:center">1.01 min</td></tr><tr><td style="text-align:center">99.999%</td><td style="text-align:center">5</td><td style="text-align:center">5.26 min</td><td style="text-align:center">26.30 sec</td><td style="text-align:center">6.05 sec</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="circuit-breaker-states">Circuit Breaker States<a href="#circuit-breaker-states" class="hash-link" aria-label="Direct link to Circuit Breaker States" title="Direct link to Circuit Breaker States" translate="no">​</a></h3>
+<table><thead><tr><th>State</th><th>Behavior</th><th>Transition Out</th></tr></thead><tbody><tr><td><strong>Closed</strong></td><td>Requests pass, failures counted</td><td>→ Open when threshold exceeded</td></tr><tr><td><strong>Open</strong></td><td>Fast-fail all requests</td><td>→ Half-Open after timeout</td></tr><tr><td><strong>Half-Open</strong></td><td>Limited probe requests</td><td>→ Closed (success) or → Open (failure)</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="rate-limiting-algorithm-comparison">Rate Limiting Algorithm Comparison<a href="#rate-limiting-algorithm-comparison" class="hash-link" aria-label="Direct link to Rate Limiting Algorithm Comparison" title="Direct link to Rate Limiting Algorithm Comparison" translate="no">​</a></h3>
+<table><thead><tr><th>Algorithm</th><th style="text-align:center">Accuracy</th><th style="text-align:center">Memory</th><th style="text-align:center">Burst</th><th>Best For</th></tr></thead><tbody><tr><td>Token Bucket</td><td style="text-align:center">Good</td><td style="text-align:center">O(1)</td><td style="text-align:center">✅</td><td>APIs, general use</td></tr><tr><td>Leaky Bucket</td><td style="text-align:center">Good</td><td style="text-align:center">O(n)</td><td style="text-align:center">❌</td><td>Constant rate output</td></tr><tr><td>Fixed Window</td><td style="text-align:center">Poor</td><td style="text-align:center">O(1)</td><td style="text-align:center">⚠️ 2× edge</td><td>Low-precision</td></tr><tr><td>Sliding Log</td><td style="text-align:center">Perfect</td><td style="text-align:center">O(n)</td><td style="text-align:center">✅</td><td>Low-rate, precise</td></tr><tr><td>Sliding Counter</td><td style="text-align:center">Very Good</td><td style="text-align:center">O(1)</td><td style="text-align:center">⚠️</td><td>Production default</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="dr-pattern-comparison">DR Pattern Comparison<a href="#dr-pattern-comparison" class="hash-link" aria-label="Direct link to DR Pattern Comparison" title="Direct link to DR Pattern Comparison" translate="no">​</a></h3>
+<table><thead><tr><th>Pattern</th><th style="text-align:center">RTO</th><th style="text-align:center">RPO</th><th style="text-align:center">Cost</th></tr></thead><tbody><tr><td>Backup &amp; Restore</td><td style="text-align:center">Hours</td><td style="text-align:center">Hours</td><td style="text-align:center">$</td></tr><tr><td>Pilot Light</td><td style="text-align:center">10-30 min</td><td style="text-align:center">Minutes</td><td style="text-align:center">$$</td></tr><tr><td>Warm Standby</td><td style="text-align:center">Minutes</td><td style="text-align:center">Seconds</td><td style="text-align:center">$$$</td></tr><tr><td>Active-Active</td><td style="text-align:center">~0</td><td style="text-align:center">~0</td><td style="text-align:center">$$$$</td></tr></tbody></table>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Ab5Z" id="category-1--sre-fundamentals">Category 1 — SRE Fundamentals<a href="#category-1--sre-fundamentals" class="hash-link" aria-label="Direct link to Category 1 — SRE Fundamentals" title="Direct link to Category 1 — SRE Fundamentals" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q1-whats-the-difference-between-sla-slo-and-sli-give-concrete-examples">Q1: What&#x27;s the difference between SLA, SLO, and SLI? Give concrete examples.<a href="#q1-whats-the-difference-between-sla-slo-and-sli-give-concrete-examples" class="hash-link" aria-label="Direct link to Q1: What&#x27;s the difference between SLA, SLO, and SLI? Give concrete examples." title="Direct link to Q1: What&#x27;s the difference between SLA, SLO, and SLI? Give concrete examples." translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<p>The three form a hierarchy from measurement to contract:</p>
+<ul>
+<li class="">
+<p><strong>SLI (Service Level Indicator)</strong> — A quantitative measurement of service behavior. It&#x27;s the raw metric.</p>
+<ul>
+<li class="">Example: &quot;99.2% of API requests returned a 2xx status code in the last 30 days.&quot;</li>
+<li class="">Example: &quot;p99 latency was 142ms.&quot;</li>
+</ul>
+</li>
+<li class="">
+<p><strong>SLO (Service Level Objective)</strong> — An internal target for an SLI. It&#x27;s the goal the engineering team commits to.</p>
+<ul>
+<li class="">Example: &quot;99.9% of API requests must return 2xx, measured over a rolling 30-day window.&quot;</li>
+<li class="">Example: &quot;p99 latency must be below 200ms.&quot;</li>
+</ul>
+</li>
+<li class="">
+<p><strong>SLA (Service Level Agreement)</strong> — A contractual promise to customers with penalties for violations. Always set looser than SLOs to provide a safety buffer.</p>
+<ul>
+<li class="">Example: &quot;99.9% uptime per month, or customer receives 10% service credit.&quot;</li>
+</ul>
+</li>
+</ul>
+<p>The relationship: SLI measures actual performance → SLO sets the internal target (tighter) → SLA defines the external contractual commitment (looser, with penalties).</p>
+<div class="theme-admonition theme-admonition-tip admonition_Q8YQ alert alert--success"><div class="admonitionHeading_iQia"><span class="admonitionIcon_p2rV"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>Senior-Level Insight</div><div class="admonitionContent_yJI9"><p>A common pitfall is setting SLOs equal to SLAs. Always maintain a buffer — if your SLA promises 99.9%, set your SLO at 99.95%. This gives you an early warning before contractual penalties apply. Your SLO breach should trigger internal action; your SLA breach triggers customer compensation.</p></div></div>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q2-how-would-you-set-slos-for-a-brand-new-service">Q2: How would you set SLOs for a brand-new service?<a href="#q2-how-would-you-set-slos-for-a-brand-new-service" class="hash-link" aria-label="Direct link to Q2: How would you set SLOs for a brand-new service?" title="Direct link to Q2: How would you set SLOs for a brand-new service?" translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<ol>
+<li class=""><strong>Identify user journeys</strong> — What do users actually do? (e.g., &quot;search products&quot;, &quot;checkout&quot;, &quot;view dashboard&quot;)</li>
+<li class=""><strong>Choose SLIs that correlate with user happiness</strong> — Availability and latency for synchronous APIs, freshness for data pipelines, correctness for ML services.</li>
+<li class=""><strong>Measure current baseline</strong> — Run the service in production (or load test) and observe actual performance for 2-4 weeks.</li>
+<li class=""><strong>Set initial SLO slightly below baseline</strong> — If p99 latency is currently 180ms, set SLO at 200ms. Don&#x27;t set aspirational targets.</li>
+<li class=""><strong>Consider dependencies</strong> — Your SLO can&#x27;t exceed your weakest dependency. If your database is 99.95%, your service can&#x27;t reliably promise 99.99%.</li>
+<li class=""><strong>Align with business</strong> — Payment processing may need 99.99%; an internal admin tool may only need 99.5%.</li>
+<li class=""><strong>Start with fewer SLOs</strong> — 2-3 well-chosen SLOs beat 10 that nobody tracks.</li>
+<li class=""><strong>Iterate</strong> — Revisit SLOs quarterly. Tighten if easily met, loosen if consuming too much engineering effort.</li>
+</ol>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q3-explain-error-budgets-and-how-they-affect-feature-velocity">Q3: Explain error budgets and how they affect feature velocity.<a href="#q3-explain-error-budgets-and-how-they-affect-feature-velocity" class="hash-link" aria-label="Direct link to Q3: Explain error budgets and how they affect feature velocity." title="Direct link to Q3: Explain error budgets and how they affect feature velocity." translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<p>An error budget is the maximum allowable unreliability, derived from the SLO: <code>Error Budget = 1 - SLO</code>.</p>
+<p>For a 99.9% SLO over 30 days:</p>
+<ul>
+<li class="">Budget = 0.1% = 43.2 minutes of downtime per month.</li>
+</ul>
+<p><strong>Impact on velocity:</strong></p>
+<table><thead><tr><th style="text-align:left">Budget Status</th><th style="text-align:left">Team Behavior</th></tr></thead><tbody><tr><td style="text-align:left">Healthy (&gt; 50% remaining)</td><td style="text-align:left">Ship features aggressively, experiment, take calculated risks</td></tr><tr><td style="text-align:left">Cautious (25-50%)</td><td style="text-align:left">Require extra review for risky changes, reduce deploy frequency</td></tr><tr><td style="text-align:left">Critical (&lt; 25%)</td><td style="text-align:left">Feature freeze on risky changes, focus on reliability improvements</td></tr><tr><td style="text-align:left">Exhausted (0%)</td><td style="text-align:left">Full feature freeze until budget replenishes or reliability improves</td></tr></tbody></table>
+<p>The key insight: error budgets align product and engineering incentives. Product teams want fast feature delivery; SRE teams want reliability. Error budgets give both sides a shared framework — when budget is healthy, ship fast; when it&#x27;s low, fix reliability. This eliminates the &quot;ops vs dev&quot; tension.</p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q4-your-service-calls-10-downstream-dependencies-each-at-999-availability-whats-the-overall-availability-how-do-you-improve-it">Q4: Your service calls 10 downstream dependencies, each at 99.9% availability. What&#x27;s the overall availability? How do you improve it?<a href="#q4-your-service-calls-10-downstream-dependencies-each-at-999-availability-whats-the-overall-availability-how-do-you-improve-it" class="hash-link" aria-label="Direct link to Q4: Your service calls 10 downstream dependencies, each at 99.9% availability. What&#x27;s the overall availability? How do you improve it?" title="Direct link to Q4: Your service calls 10 downstream dependencies, each at 99.9% availability. What&#x27;s the overall availability? How do you improve it?" translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<p><strong>Compound availability (serial dependencies):</strong> 99.9%^10 = 99.0% — dropped from three nines to two nines. That&#x27;s 3.65 days of downtime per year versus 8.76 hours.</p>
+<p><strong>Improvement strategies:</strong></p>
+<ol>
+<li class=""><strong>Reduce critical path dependencies</strong> — Not all 10 need to be synchronous. Move analytics, logging, and non-critical calls to async.</li>
+<li class=""><strong>Add redundancy for critical deps</strong> — Run two instances of a critical service. Parallel availability: 1 - (0.001)^2 = 99.9999%.</li>
+<li class=""><strong>Graceful degradation</strong> — If recommendations service is down, show trending items instead. Don&#x27;t fail the whole page.</li>
+<li class=""><strong>Caching</strong> — Cache responses from downstream services. Serve stale data during outages.</li>
+<li class=""><strong>Circuit breakers</strong> — Stop calling a failing dependency; return fallback immediately.</li>
+<li class=""><strong>Timeout budgets</strong> — Propagate deadlines so total latency stays bounded.</li>
+</ol>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Ab5Z" id="category-2--resilience-patterns">Category 2 — Resilience Patterns<a href="#category-2--resilience-patterns" class="hash-link" aria-label="Direct link to Category 2 — Resilience Patterns" title="Direct link to Category 2 — Resilience Patterns" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q5-explain-the-circuit-breaker-pattern-walk-through-all-three-states">Q5: Explain the circuit breaker pattern. Walk through all three states.<a href="#q5-explain-the-circuit-breaker-pattern-walk-through-all-three-states" class="hash-link" aria-label="Direct link to Q5: Explain the circuit breaker pattern. Walk through all three states." title="Direct link to Q5: Explain the circuit breaker pattern. Walk through all three states." translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<p>The circuit breaker monitors calls to a downstream service and trips when failures exceed a threshold, preventing cascading failure.</p>
+<p><strong>States:</strong></p>
+<ol>
+<li class="">
+<p><strong>Closed</strong> (normal operation):</p>
+<ul>
+<li class="">All requests pass through to the downstream service.</li>
+<li class="">Failures are counted within a sliding window (e.g., last 10 calls or last 60 seconds).</li>
+<li class="">If failure rate exceeds threshold (e.g., 50% of last 10 calls fail), transition to <strong>Open</strong>.</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Open</strong> (fail-fast):</p>
+<ul>
+<li class="">No requests are sent to the downstream service.</li>
+<li class="">All calls immediately return a fallback response or throw an exception.</li>
+<li class="">A timer starts. After a configured duration (e.g., 30 seconds), transition to <strong>Half-Open</strong>.</li>
+<li class="">Purpose: give the downstream service time to recover without hammering it.</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Half-Open</strong> (probing):</p>
+<ul>
+<li class="">A limited number of probe requests (e.g., 3-5) are sent to the downstream service.</li>
+<li class="">If probes succeed: transition back to <strong>Closed</strong> (service recovered).</li>
+<li class="">If probes fail: transition back to <strong>Open</strong> (service still unhealthy, reset timer).</li>
+</ul>
+</li>
+</ol>
+<p><strong>Implementation considerations:</strong></p>
+<ul>
+<li class="">Use count-based windows for high-throughput services, time-based for low-throughput.</li>
+<li class="">Set a <code>minimumNumberOfCalls</code> to avoid tripping on insufficient data.</li>
+<li class="">Track slow calls separately — a service returning 200 OK but taking 10 seconds is effectively failing.</li>
+<li class="">Always provide a meaningful fallback (cached data, default value, empty list).</li>
+</ul>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q6-when-would-you-use-exponential-backoff-with-jitter-vs-without">Q6: When would you use exponential backoff with jitter vs without?<a href="#q6-when-would-you-use-exponential-backoff-with-jitter-vs-without" class="hash-link" aria-label="Direct link to Q6: When would you use exponential backoff with jitter vs without?" title="Direct link to Q6: When would you use exponential backoff with jitter vs without?" translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<p><strong>Without jitter:</strong> All clients retry at the same intervals (1s, 2s, 4s, 8s...). If 100 clients fail at the same time, they all retry at t=1s, then t=3s, then t=7s — creating synchronized bursts that can prevent the server from recovering. This is called the <strong>thundering herd problem</strong>.</p>
+<p><strong>With jitter:</strong> Each client adds randomness. Client A retries at 0.7s, Client B at 1.3s, Client C at 0.2s. This spreads retries across the window, reducing peak load on the recovering service.</p>
+<p><strong>Always use jitter in production.</strong> The only case for no-jitter is single-client local retries where thundering herd isn&#x27;t a concern (e.g., retrying a local file read).</p>
+<p><strong>Jitter variants:</strong></p>
+<ul>
+<li class=""><strong>Full jitter:</strong> <code>random(0, base * 2^attempt)</code> — most spread, best for distributed systems.</li>
+<li class=""><strong>Equal jitter:</strong> <code>base * 2^attempt / 2 + random(0, base * 2^attempt / 2)</code> — guaranteed minimum wait.</li>
+<li class=""><strong>Decorrelated jitter:</strong> <code>random(base, previous_delay * 3)</code> — each retry based on previous delay.</li>
+</ul>
+<div class="theme-admonition theme-admonition-tip admonition_Q8YQ alert alert--success"><div class="admonitionHeading_iQia"><span class="admonitionIcon_p2rV"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>Senior-Level Insight</div><div class="admonitionContent_yJI9"><p>AWS recommends full jitter as the default. Their analysis shows it produces the best overall throughput under contention. Equal jitter is useful when you need a guaranteed minimum delay between retries (e.g., waiting for a leader election that takes at least N seconds).</p></div></div>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q7-how-do-you-prevent-cascading-failures-in-a-microservice-architecture">Q7: How do you prevent cascading failures in a microservice architecture?<a href="#q7-how-do-you-prevent-cascading-failures-in-a-microservice-architecture" class="hash-link" aria-label="Direct link to Q7: How do you prevent cascading failures in a microservice architecture?" title="Direct link to Q7: How do you prevent cascading failures in a microservice architecture?" translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<p>Cascading failures propagate when one service&#x27;s failure causes its callers to fail, which causes their callers to fail, etc. Prevention requires defense at every layer:</p>
+<ol>
+<li class=""><strong>Timeouts on every outbound call</strong> — Never wait indefinitely. Set connect timeout (1-3s) and read timeout (5-15s).</li>
+<li class=""><strong>Circuit breakers on every dependency</strong> — Stop calling a service that&#x27;s failing. Return fallback.</li>
+<li class=""><strong>Bulkheads for resource isolation</strong> — Separate thread pools per dependency so a hanging service doesn&#x27;t consume all threads.</li>
+<li class=""><strong>Graceful degradation</strong> — Classify dependencies as critical vs non-critical. Non-critical failures return fallback; only critical failures propagate.</li>
+<li class=""><strong>Load shedding</strong> — When overwhelmed, reject excess requests (429) rather than serving all slowly.</li>
+<li class=""><strong>Backpressure</strong> — In async systems, signal producers to slow down when consumers can&#x27;t keep up.</li>
+<li class=""><strong>Health checks</strong> — Remove unhealthy instances from load balancer pools quickly.</li>
+<li class=""><strong>Retry budgets</strong> — Limit total retries across the system. If 100 clients each retry 3 times, the failing service sees 400 requests instead of 100.</li>
+</ol>
+<p>The combination of <strong>timeouts + circuit breakers + bulkheads</strong> is called the &quot;resilience triad&quot; and should be applied to every service-to-service call.</p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q8-explain-the-difference-between-fail-fast-and-fail-safe-when-do-you-use-each">Q8: Explain the difference between fail-fast and fail-safe. When do you use each?<a href="#q8-explain-the-difference-between-fail-fast-and-fail-safe-when-do-you-use-each" class="hash-link" aria-label="Direct link to Q8: Explain the difference between fail-fast and fail-safe. When do you use each?" title="Direct link to Q8: Explain the difference between fail-fast and fail-safe. When do you use each?" translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<table><thead><tr><th></th><th>Fail-Fast</th><th>Fail-Safe</th></tr></thead><tbody><tr><td><strong>On error</strong></td><td>Immediately report failure</td><td>Absorb failure, continue</td></tr><tr><td><strong>Priority</strong></td><td>Data correctness</td><td>Service availability</td></tr><tr><td><strong>Example</strong></td><td>Payment processing</td><td>Recommendation widget</td></tr></tbody></table>
+<p><strong>Use fail-fast when:</strong></p>
+<ul>
+<li class="">Data integrity is critical (financial transactions, writes to primary DB)</li>
+<li class="">The error indicates a programmer bug that should be fixed, not hidden</li>
+<li class="">Continuing would make the problem worse (double-charging a customer)</li>
+<li class="">The circuit breaker is in OPEN state (fast-fail is intentional)</li>
+</ul>
+<p><strong>Use fail-safe when:</strong></p>
+<ul>
+<li class="">Availability is more important than completeness (serving a webpage with recommendations missing is better than a 500 error)</li>
+<li class="">Stale or default data is acceptable</li>
+<li class="">The failing component is non-critical to the user&#x27;s primary goal</li>
+<li class="">You can serve a degraded experience that&#x27;s still useful</li>
+</ul>
+<p>In practice, a single request often uses both: fail-fast for the core operation (charge payment) and fail-safe for ancillary operations (send confirmation email, log analytics event).</p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Ab5Z" id="category-3--rate-limiting">Category 3 — Rate Limiting<a href="#category-3--rate-limiting" class="hash-link" aria-label="Direct link to Category 3 — Rate Limiting" title="Direct link to Category 3 — Rate Limiting" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q9-design-rate-limiting-for-a-global-api-serving-millions-of-requests-per-second">Q9: Design rate limiting for a global API serving millions of requests per second.<a href="#q9-design-rate-limiting-for-a-global-api-serving-millions-of-requests-per-second" class="hash-link" aria-label="Direct link to Q9: Design rate limiting for a global API serving millions of requests per second." title="Direct link to Q9: Design rate limiting for a global API serving millions of requests per second." translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<p><strong>Requirements clarification:</strong></p>
+<ul>
+<li class="">Global: multiple regions (US, EU, Asia)</li>
+<li class="">Per-customer rate limits (API key based)</li>
+<li class="">Burst tolerance needed (APIs should allow short bursts)</li>
+<li class="">Must be fast (&lt; 1ms overhead per request)</li>
+</ul>
+<p><strong>Algorithm choice:</strong> Token bucket — allows controlled bursts, O(1) per check, industry standard for APIs.</p>
+<p><strong>Architecture:</strong></p>
+<div class="language-text codeBlockContainer_LW_r theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_Yo7j"><pre tabindex="0" class="prism-code language-text codeBlock_hY9W thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_zk3A"><div class="token-line" style="color:#F8F8F2"><span class="token plain">  Client Request</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">       │</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">       ▼</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">  ┌─────────────┐    Tier-1: Edge rate limiting</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">  │ API Gateway │    (per-IP, coarse-grained)</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">  │ (NGINX/Kong)│    Rate limiting at CDN edge (Cloudflare, AWS WAF)</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">  └──────┬──────┘</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">         │</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">         ▼</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">  ┌─────────────┐    Tier-2: Application rate limiting</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">  │ Rate Limit  │    (per-API-key, fine-grained)</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">  │ Service     │    Token bucket per API key</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">  └──────┬──────┘</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">         │</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">         ▼</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">  ┌─────────────┐</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">  │ Redis Cluster│    Centralized counter store</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">  │ (per region) │    Lua scripts for atomic operations</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">  └─────────────┘</span><br></div></code></pre></div></div>
+<p><strong>Distributed strategy:</strong></p>
+<ul>
+<li class="">Each region has its own Redis cluster for local rate limiting (low latency).</li>
+<li class="">For global limits, use async aggregation: each region tracks local counts and periodically syncs to a global counter. Accept slight over-admission (e.g., 105% of limit) in exchange for low latency.</li>
+<li class="">For strict global limits (billing, compliance), use a centralized rate limiter with higher latency.</li>
+</ul>
+<p><strong>Failure handling:</strong></p>
+<ul>
+<li class="">If Redis is unavailable: fail-open (allow requests) with local in-memory rate limiting as fallback.</li>
+<li class="">Circuit-break the rate limiter itself — if checking limits adds &gt; 5ms, bypass and log.</li>
+</ul>
+<p><strong>Response headers:</strong> Always return <code>X-RateLimit-Limit</code>, <code>X-RateLimit-Remaining</code>, <code>X-RateLimit-Reset</code>, and <code>Retry-After</code> on 429.</p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q10-compare-token-bucket-and-sliding-window-counter-when-would-you-choose-each">Q10: Compare token bucket and sliding window counter. When would you choose each?<a href="#q10-compare-token-bucket-and-sliding-window-counter-when-would-you-choose-each" class="hash-link" aria-label="Direct link to Q10: Compare token bucket and sliding window counter. When would you choose each?" title="Direct link to Q10: Compare token bucket and sliding window counter. When would you choose each?" translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<table><thead><tr><th>Aspect</th><th>Token Bucket</th><th>Sliding Window Counter</th></tr></thead><tbody><tr><td><strong>Burst</strong></td><td>Allows bursts up to bucket capacity</td><td>Smooth enforcement, no large bursts</td></tr><tr><td><strong>Memory</strong></td><td>O(1) per key</td><td>O(1) per key</td></tr><tr><td><strong>Precision</strong></td><td>Good for rate, not window-precise</td><td>Very good (weighted approximation)</td></tr><tr><td><strong>Implementation</strong></td><td>Counter + timestamp</td><td>Two counters + window tracking</td></tr><tr><td><strong>Use case</strong></td><td>APIs (users expect burst tolerance)</td><td>Background job limits, strict enforcement</td></tr></tbody></table>
+<p><strong>Choose token bucket when:</strong></p>
+<ul>
+<li class="">You want to allow controlled bursts (e.g., user opens app and makes 10 API calls in 1 second, then goes quiet).</li>
+<li class="">You&#x27;re building a public API (industry convention).</li>
+<li class="">You need simplicity and speed.</li>
+</ul>
+<p><strong>Choose sliding window counter when:</strong></p>
+<ul>
+<li class="">You need smooth, predictable rate enforcement (no bursts).</li>
+<li class="">You want window-accurate counts without the memory cost of sliding window log.</li>
+<li class="">You&#x27;re limiting background processes or batch jobs.</li>
+</ul>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q11-how-would-you-handle-rate-limiting-when-your-redis-cluster-goes-down">Q11: How would you handle rate limiting when your Redis cluster goes down?<a href="#q11-how-would-you-handle-rate-limiting-when-your-redis-cluster-goes-down" class="hash-link" aria-label="Direct link to Q11: How would you handle rate limiting when your Redis cluster goes down?" title="Direct link to Q11: How would you handle rate limiting when your Redis cluster goes down?" translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<p>This is a critical operational question. Options:</p>
+<ol>
+<li class="">
+<p><strong>Fail-open (allow all):</strong></p>
+<ul>
+<li class="">Remove rate limiting entirely when Redis is unavailable.</li>
+<li class="">Risk: service is unprotected from abuse/overload.</li>
+<li class="">Mitigation: use local in-memory rate limiting per instance with a generous limit.</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Fail-closed (reject all):</strong></p>
+<ul>
+<li class="">Return 503 for all requests when rate limiter is unavailable.</li>
+<li class="">Risk: self-inflicted outage. A rate limiter failure becomes a total outage.</li>
+<li class="">Almost never the right choice.</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Hybrid (recommended):</strong></p>
+<ul>
+<li class="">Fall back to <strong>local in-memory rate limiting</strong> per application instance.</li>
+<li class="">Split the global limit across instances: <code>local_limit = global_limit / num_instances</code>.</li>
+<li class="">Accept that limits will be approximate (some over-admission possible).</li>
+<li class="">Alert the on-call team that distributed rate limiting is degraded.</li>
+<li class="">Circuit-break Redis — once it&#x27;s detected as down, don&#x27;t add latency by trying to reach it.</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Cached limits:</strong></p>
+<ul>
+<li class="">Cache the last known rate limit counters locally.</li>
+<li class="">Use cached values with a staleness timeout (e.g., 30 seconds).</li>
+<li class="">If cache is too stale, fall back to local limits.</li>
+</ul>
+</li>
+</ol>
+<div class="theme-admonition theme-admonition-warning admonition_Q8YQ alert alert--warning"><div class="admonitionHeading_iQia"><span class="admonitionIcon_p2rV"><svg viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.893 1.5c-.183-.31-.52-.5-.887-.5s-.703.19-.886.5L.138 13.499a.98.98 0 0 0 0 1.001c.193.31.53.501.886.501h13.964c.367 0 .704-.19.877-.5a1.03 1.03 0 0 0 .01-1.002L8.893 1.5zm.133 11.497H6.987v-2.003h2.039v2.003zm0-3.004H6.987V5.987h2.039v4.006z"></path></svg></span>warning</div><div class="admonitionContent_yJI9"><p>The worst possible outcome is a rate limiter failure causing a service outage. Rate limiting is a protective mechanism — if it fails, the service should still work, just with reduced protection. Always design rate limiters to fail-open or degrade gracefully.</p></div></div>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Ab5Z" id="category-4--incident-management">Category 4 — Incident Management<a href="#category-4--incident-management" class="hash-link" aria-label="Direct link to Category 4 — Incident Management" title="Direct link to Category 4 — Incident Management" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q12-your-services-error-rate-doubles-after-a-deploy-walk-through-your-response">Q12: Your service&#x27;s error rate doubles after a deploy. Walk through your response.<a href="#q12-your-services-error-rate-doubles-after-a-deploy-walk-through-your-response" class="hash-link" aria-label="Direct link to Q12: Your service&#x27;s error rate doubles after a deploy. Walk through your response." title="Direct link to Q12: Your service&#x27;s error rate doubles after a deploy. Walk through your response." translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<p><strong>Phase 1 — Detection &amp; Triage (0-5 minutes):</strong></p>
+<ol>
+<li class="">Alert fires: error rate exceeded threshold (e.g., 1% → 2%).</li>
+<li class="">Acknowledge the alert within 5 minutes.</li>
+<li class="">Check: Is this correlated with a recent deploy? → Yes, deploy happened 10 minutes ago.</li>
+<li class="">Assess severity: If the error rate is user-facing and affecting checkout, this is SEV1/SEV2. If it&#x27;s an internal service, possibly SEV3.</li>
+<li class="">If SEV1/SEV2: Declare incident, assign IC, open war room channel.</li>
+</ol>
+<p><strong>Phase 2 — Mitigation (5-15 minutes):</strong></p>
+<ol>
+<li class=""><strong>Immediate rollback</strong> — This is almost always the right first action when errors correlate with a deploy. Don&#x27;t debug first; roll back first.<!-- -->
+<div class="language-text codeBlockContainer_LW_r theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_Yo7j"><pre tabindex="0" class="prism-code language-text codeBlock_hY9W thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_zk3A"><div class="token-line" style="color:#F8F8F2"><span class="token plain">kubectl rollout undo deployment/my-service</span><br></div></code></pre></div></div>
+</li>
+<li class="">Monitor error rate: Is it decreasing? If yes, rollback was effective.</li>
+<li class="">If rollback is not possible (database migration, data format change): Enable feature flag to disable the new code path.</li>
+<li class="">Update status page and stakeholder channel.</li>
+</ol>
+<p><strong>Phase 3 — Verification (15-30 minutes):</strong></p>
+<ol>
+<li class="">Confirm error rate returned to baseline.</li>
+<li class="">Check for any data corruption or side effects during the error window.</li>
+<li class="">Verify no downstream services were impacted.</li>
+<li class="">If stable, downgrade severity.</li>
+</ol>
+<p><strong>Phase 4 — Resolution (hours/days):</strong></p>
+<ol>
+<li class="">Investigate the root cause in the deploy diff.</li>
+<li class="">Add test coverage for the failure case.</li>
+<li class="">Fix the bug and re-deploy through normal canary process.</li>
+</ol>
+<p><strong>Phase 5 — Postmortem:</strong></p>
+<ol>
+<li class="">Write blameless postmortem with timeline, root cause, and action items.</li>
+<li class="">Action items: improve canary detection, add test for this case, review deploy checklist.</li>
+</ol>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q13-write-a-postmortem-for-the-following-scenario-a-database-migration-deleted-a-column-that-was-still-in-use-causing-500-errors-for-45-minutes">Q13: Write a postmortem for the following scenario: A database migration deleted a column that was still in use, causing 500 errors for 45 minutes.<a href="#q13-write-a-postmortem-for-the-following-scenario-a-database-migration-deleted-a-column-that-was-still-in-use-causing-500-errors-for-45-minutes" class="hash-link" aria-label="Direct link to Q13: Write a postmortem for the following scenario: A database migration deleted a column that was still in use, causing 500 errors for 45 minutes." title="Direct link to Q13: Write a postmortem for the following scenario: A database migration deleted a column that was still in use, causing 500 errors for 45 minutes." translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<div class="language-markdown codeBlockContainer_LW_r theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_Yo7j"><pre tabindex="0" class="prism-code language-markdown codeBlock_hY9W thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_zk3A"><div class="token-line" style="color:#F8F8F2"><span class="token title important punctuation" style="color:rgb(248, 248, 242)">#</span><span class="token title important"> Postmortem: Column Deletion Caused 500 Errors</span><span class="token plain"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain"></span><span class="token title important punctuation" style="color:rgb(248, 248, 242)">##</span><span class="token title important"> Summary</span><span class="token plain"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">A database migration dropped the </span><span class="token code-snippet code keyword" style="color:rgb(189, 147, 249);font-style:italic">`user_preferences`</span><span class="token plain"> column from the</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain"></span><span class="token code-snippet code keyword" style="color:rgb(189, 147, 249);font-style:italic">`users`</span><span class="token plain"> table while the application code still referenced it, causing</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">500 errors on all user profile endpoints for 45 minutes.</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain"></span><span class="token title important punctuation" style="color:rgb(248, 248, 242)">##</span><span class="token title important"> Impact</span><span class="token plain"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain"></span><span class="token list punctuation" style="color:rgb(248, 248, 242)">-</span><span class="token plain"> Duration: 45 minutes (14:00 - 14:45 UTC)</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain"></span><span class="token list punctuation" style="color:rgb(248, 248, 242)">-</span><span class="token plain"> Users affected: ~12,000 (all users accessing profile pages)</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain"></span><span class="token list punctuation" style="color:rgb(248, 248, 242)">-</span><span class="token plain"> Error rate: Profile API returned 500 for 100% of requests</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain"></span><span class="token list punctuation" style="color:rgb(248, 248, 242)">-</span><span class="token plain"> SLO impact: Monthly availability dropped from 99.97% to 99.89%</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain"></span><span class="token title important punctuation" style="color:rgb(248, 248, 242)">##</span><span class="token title important"> Timeline</span><span class="token plain"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain"></span><span class="token table table-header-row punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-header-row table-header important"> Time </span><span class="token table table-header-row punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-header-row table-header important"> Event </span><span class="token table table-header-row punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-header-row"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token table table-header-row"></span><span class="token table table-line punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-line punctuation" style="color:rgb(248, 248, 242)">------</span><span class="token table table-line punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-line punctuation" style="color:rgb(248, 248, 242)">-------</span><span class="token table table-line punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-line"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token table table-line"></span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> 13:55 </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> Migration PR #892 merged and auto-deployed </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token table table-data-rows"></span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> 14:00 </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> Error rate alert fires for profile-service </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token table table-data-rows"></span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> 14:03 </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> On-call acknowledges, sees 500 errors </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token table table-data-rows"></span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> 14:08 </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> IC assigned, SEV2 declared </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token table table-data-rows"></span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> 14:12 </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> Correlation with migration identified </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token table table-data-rows"></span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> 14:15 </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> Attempted app rollback — doesn&#x27;t help (column gone) </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token table table-data-rows"></span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> 14:20 </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> Decision: recreate column from backup </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token table table-data-rows"></span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> 14:35 </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> Column restored from point-in-time backup </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token table table-data-rows"></span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> 14:40 </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> Migration rollback applied (re-add column) </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token table table-data-rows"></span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> 14:45 </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> Error rate returns to zero, incident resolved </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token table table-data-rows"></span><span class="token plain"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain"></span><span class="token title important punctuation" style="color:rgb(248, 248, 242)">##</span><span class="token title important"> Root Cause</span><span class="token plain"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">The migration script dropped </span><span class="token code-snippet code keyword" style="color:rgb(189, 147, 249);font-style:italic">`user_preferences`</span><span class="token plain"> column as part of</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">a schema cleanup. The column was marked &quot;unused&quot; in a design doc</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">from 6 months ago, but the profile API still read from it. The PR</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">reviewer didn&#x27;t check for application references.</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain"></span><span class="token title important punctuation" style="color:rgb(248, 248, 242)">##</span><span class="token title important"> Contributing Factors</span><span class="token plain"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain"></span><span class="token list punctuation" style="color:rgb(248, 248, 242)">1.</span><span class="token plain"> No automated check for column references before dropping</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain"></span><span class="token list punctuation" style="color:rgb(248, 248, 242)">2.</span><span class="token plain"> Migration and code change were in separate PRs (not atomic)</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain"></span><span class="token list punctuation" style="color:rgb(248, 248, 242)">3.</span><span class="token plain"> Staging environment had different data, masking the issue</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain"></span><span class="token list punctuation" style="color:rgb(248, 248, 242)">4.</span><span class="token plain"> No expand-contract migration pattern used</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain"></span><span class="token title important punctuation" style="color:rgb(248, 248, 242)">##</span><span class="token title important"> Action Items</span><span class="token plain"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain"></span><span class="token table table-header-row punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-header-row table-header important"> </span><span class="token table table-header-row table-header important title important punctuation" style="color:rgb(248, 248, 242)">#</span><span class="token table table-header-row table-header important title important"> </span><span class="token table table-header-row punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-header-row table-header important"> Action </span><span class="token table table-header-row punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-header-row table-header important"> Owner </span><span class="token table table-header-row punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-header-row table-header important"> Priority </span><span class="token table table-header-row punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-header-row table-header important"> Due </span><span class="token table table-header-row punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-header-row"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token table table-header-row"></span><span class="token table table-line punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-line punctuation" style="color:rgb(248, 248, 242)">---</span><span class="token table table-line punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-line punctuation" style="color:rgb(248, 248, 242)">--------</span><span class="token table table-line punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-line punctuation" style="color:rgb(248, 248, 242)">-------</span><span class="token table table-line punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-line punctuation" style="color:rgb(248, 248, 242)">----------</span><span class="token table table-line punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-line punctuation" style="color:rgb(248, 248, 242)">-----</span><span class="token table table-line punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-line"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token table table-line"></span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> 1 </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> Add CI check: scan code for column references before drop migrations </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> @alice </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> P0 </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> 1 week </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token table table-data-rows"></span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> 2 </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> Adopt expand-contract pattern for all schema changes </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> @bob </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> P1 </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> 2 weeks </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token table table-data-rows"></span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> 3 </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> Require code + migration in same PR when coupled </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> @carol </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> P0 </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> 1 week </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token table table-data-rows"></span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> 4 </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> Add migration dry-run in staging with production-like data </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> @dave </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> P1 </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> 3 weeks </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows"></span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token table table-data-rows"></span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> 5 </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> Create runbook for &quot;restore dropped column&quot; procedure </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> @alice </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> P2 </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><span class="token table table-data-rows table-data"> 2 weeks </span><span class="token table table-data-rows punctuation" style="color:rgb(248, 248, 242)">|</span><br></div></code></pre></div></div>
+<div class="theme-admonition theme-admonition-tip admonition_Q8YQ alert alert--success"><div class="admonitionHeading_iQia"><span class="admonitionIcon_p2rV"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>Senior-Level Insight</div><div class="admonitionContent_yJI9"><p>This scenario highlights the importance of the <strong>expand-contract migration pattern</strong>: (1) add new column, (2) migrate application code, (3) backfill data, (4) drop old column. Never drop a column and update code in a single deploy. Each step should be independently reversible.</p></div></div>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q14-how-do-you-structure-an-on-call-rotation-to-avoid-burnout">Q14: How do you structure an on-call rotation to avoid burnout?<a href="#q14-how-do-you-structure-an-on-call-rotation-to-avoid-burnout" class="hash-link" aria-label="Direct link to Q14: How do you structure an on-call rotation to avoid burnout?" title="Direct link to Q14: How do you structure an on-call rotation to avoid burnout?" translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<ol>
+<li class="">
+<p><strong>Rotation schedule:</strong> Weekly rotations (not daily — too much context switching). Primary + secondary on-call. Minimum 6-8 people in the rotation to ensure enough rest.</p>
+</li>
+<li class="">
+<p><strong>Workload management:</strong></p>
+<ul>
+<li class="">Target: &lt; 2 pages per on-call shift (per person, per week).</li>
+<li class="">If consistently exceeding this: fix noisy alerts, automate responses, or add team members.</li>
+<li class="">Maximum 25% of work time on reactive operational tasks.</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Alert quality:</strong></p>
+<ul>
+<li class="">Every alert must be actionable — if it pages someone at 3 AM, there must be something to do.</li>
+<li class="">Remove alerts that always resolve themselves (noise).</li>
+<li class="">Use multi-window burn rate alerts instead of threshold alerts.</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Compensation and recognition:</strong></p>
+<ul>
+<li class="">On-call pay or comp time for after-hours pages.</li>
+<li class="">Acknowledge on-call burden in performance reviews.</li>
+<li class="">Allow flex time after difficult on-call shifts.</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Handoff process:</strong></p>
+<ul>
+<li class="">End-of-shift handoff document: active incidents, known issues, upcoming risks.</li>
+<li class="">15-minute handoff meeting between outgoing and incoming on-call.</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Continuous improvement:</strong></p>
+<ul>
+<li class="">Track pages per shift, MTTA, MTTR, and repeat incidents.</li>
+<li class="">Postmortem every high-severity incident.</li>
+<li class="">Weekly on-call review meeting: what happened, what can be automated, what needs fixing.</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Ab5Z" id="category-5--disaster-recovery">Category 5 — Disaster Recovery<a href="#category-5--disaster-recovery" class="hash-link" aria-label="Direct link to Category 5 — Disaster Recovery" title="Direct link to Category 5 — Disaster Recovery" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q15-design-a-disaster-recovery-plan-for-a-payment-processing-system">Q15: Design a disaster recovery plan for a payment processing system.<a href="#q15-design-a-disaster-recovery-plan-for-a-payment-processing-system" class="hash-link" aria-label="Direct link to Q15: Design a disaster recovery plan for a payment processing system." title="Direct link to Q15: Design a disaster recovery plan for a payment processing system." translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<p><strong>Requirements:</strong></p>
+<ul>
+<li class="">Payment systems are Tier 0: RTO &lt; 1 minute, RPO = 0 (no data loss).</li>
+<li class="">Must comply with PCI-DSS (data security).</li>
+<li class="">Global customer base — multi-region.</li>
+</ul>
+<p><strong>Architecture: Multi-Site Active-Active</strong></p>
+<div class="language-text codeBlockContainer_LW_r theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_Yo7j"><pre tabindex="0" class="prism-code language-text codeBlock_hY9W thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_zk3A"><div class="token-line" style="color:#F8F8F2"><span class="token plain">  Region A (US-East)                    Region B (US-West)</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">  ┌───────────────────┐                ┌───────────────────┐</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">  │  Payment API      │                │  Payment API      │</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">  │  ████████████     │                │  ████████████     │</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">  │  Database (Primary)│  Synchronous  │  Database (Primary)│</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">  │  ████████████     │◄─────────────▶│  ████████████     │</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">  └───────────────────┘  Replication   └───────────────────┘</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">          ▲                                     ▲</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">          │           ┌────────────┐             │</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">          └───────────│ Global LB  │─────────────┘</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">                      │ (Route 53  │</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">                      │  / GLB)    │</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">                      └────────────┘</span><br></div></code></pre></div></div>
+<p><strong>Key decisions:</strong></p>
+<ol>
+<li class="">
+<p><strong>Data replication:</strong> Synchronous replication between regions. Accept the latency cost (write takes ~50-100ms extra) to guarantee RPO = 0.</p>
+</li>
+<li class="">
+<p><strong>Conflict resolution:</strong> Use region-aware sharding so each transaction is owned by one region. Customer is routed to their home region; failover sends them to the other.</p>
+</li>
+<li class="">
+<p><strong>Failover:</strong> Global load balancer with health checks. Automatic failover within 30-60 seconds. No DNS dependency (DNS TTL is too slow for &lt; 1 min RTO).</p>
+</li>
+<li class="">
+<p><strong>Testing:</strong> Monthly controlled failover to DR region. Quarterly game day with full traffic rerouting. Weekly canary restores of database backups.</p>
+</li>
+<li class="">
+<p><strong>Data integrity:</strong> After failover, run reconciliation jobs to verify no transactions were lost or duplicated. Use idempotency keys on all payment operations.</p>
+</li>
+</ol>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q16-compare-rto-and-rpo-how-do-you-determine-the-right-values-for-a-service">Q16: Compare RTO and RPO. How do you determine the right values for a service?<a href="#q16-compare-rto-and-rpo-how-do-you-determine-the-right-values-for-a-service" class="hash-link" aria-label="Direct link to Q16: Compare RTO and RPO. How do you determine the right values for a service?" title="Direct link to Q16: Compare RTO and RPO. How do you determine the right values for a service?" translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<p><strong>RPO (Recovery Point Objective)</strong> = &quot;How much data can I lose?&quot;</p>
+<ul>
+<li class="">RPO = 0: No data loss (synchronous replication, active-active)</li>
+<li class="">RPO = 1 hour: Can lose up to 1 hour of data (hourly backups)</li>
+<li class="">RPO = 24 hours: Can lose up to a day (daily backups)</li>
+</ul>
+<p><strong>RTO (Recovery Time Objective)</strong> = &quot;How long can I be down?&quot;</p>
+<ul>
+<li class="">RTO = 0: No downtime (active-active, instant failover)</li>
+<li class="">RTO = 15 minutes: Service must recover within 15 min (warm standby)</li>
+<li class="">RTO = 4 hours: Can tolerate half a business day of downtime</li>
+</ul>
+<p><strong>How to determine values:</strong></p>
+<ol>
+<li class="">
+<p><strong>Quantify business impact:</strong></p>
+<ul>
+<li class="">Revenue loss per minute of downtime</li>
+<li class="">Cost per unit of data lost (e.g., per transaction, per order)</li>
+<li class="">Regulatory requirements (financial services may mandate RPO = 0)</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Categorize services by tier:</strong></p>
+<ul>
+<li class="">Tier 0 (payments, auth): RTO &lt; 1 min, RPO = 0</li>
+<li class="">Tier 1 (core API): RTO &lt; 15 min, RPO &lt; 1 min</li>
+<li class="">Tier 2 (search, recommendations): RTO &lt; 1 hour, RPO &lt; 1 hour</li>
+<li class="">Tier 3 (analytics, batch): RTO &lt; 4 hours, RPO &lt; 24 hours</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Balance cost vs risk:</strong></p>
+<ul>
+<li class="">Reducing RTO/RPO costs exponentially more.</li>
+<li class="">RPO = 0 requires synchronous replication (expensive, adds latency).</li>
+<li class="">RTO = 0 requires active-active infrastructure (2x+ cost).</li>
+<li class="">Find the knee of the cost curve where marginal improvement isn&#x27;t worth the expense.</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q17-how-would-you-test-disaster-recovery-without-impacting-production">Q17: How would you test disaster recovery without impacting production?<a href="#q17-how-would-you-test-disaster-recovery-without-impacting-production" class="hash-link" aria-label="Direct link to Q17: How would you test disaster recovery without impacting production?" title="Direct link to Q17: How would you test disaster recovery without impacting production?" translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<p><strong>Progressive testing strategy (from safest to most realistic):</strong></p>
+<ol>
+<li class="">
+<p><strong>Tabletop exercise</strong> (zero risk):</p>
+<ul>
+<li class="">Gather the team in a room. Present a disaster scenario on paper.</li>
+<li class="">Walk through the runbook step by step. Identify gaps.</li>
+<li class="">&quot;Database primary in us-east-1 goes down at 2 AM Saturday. What do we do?&quot;</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Canary restore</strong> (low risk):</p>
+<ul>
+<li class="">Restore latest backup to an isolated test environment.</li>
+<li class="">Verify data integrity: check row counts, run validation queries, compare checksums.</li>
+<li class="">Measure restore time (this is your actual RTO baseline).</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Component failover</strong> (low-medium risk):</p>
+<ul>
+<li class="">Fail over a single non-critical database to its replica.</li>
+<li class="">Measure failover time, data loss, and application behavior.</li>
+<li class="">Do this during low-traffic periods.</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Controlled regional failover</strong> (medium risk):</p>
+<ul>
+<li class="">Redirect a small percentage of traffic (1-5%) to the DR region.</li>
+<li class="">Gradually increase to 100% while monitoring errors and latency.</li>
+<li class="">Fail back to primary region when satisfied.</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Game day</strong> (medium-high risk):</p>
+<ul>
+<li class="">Simulate a full region failure in production during business hours.</li>
+<li class="">Intentionally block traffic to primary region.</li>
+<li class="">Observe automated failover, measure RTO/RPO, identify gaps.</li>
+<li class="">Have rollback plan ready.</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Chaos engineering</strong> (ongoing, medium risk):</p>
+<ul>
+<li class="">Inject failures randomly in production (Netflix Chaos Monkey).</li>
+<li class="">Kill pods, introduce latency, partition networks.</li>
+<li class="">Validates resilience patterns are working continuously.</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q18-a-junior-engineer-accidentally-deleted-a-production-database-table-walk-through-the-recovery-process">Q18: A junior engineer accidentally deleted a production database table. Walk through the recovery process.<a href="#q18-a-junior-engineer-accidentally-deleted-a-production-database-table-walk-through-the-recovery-process" class="hash-link" aria-label="Direct link to Q18: A junior engineer accidentally deleted a production database table. Walk through the recovery process." title="Direct link to Q18: A junior engineer accidentally deleted a production database table. Walk through the recovery process." translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<p><strong>Immediate actions (0-5 minutes):</strong></p>
+<ol>
+<li class=""><strong>Stop the bleeding</strong> — Revoke the engineer&#x27;s write access immediately (prevent further damage).</li>
+<li class=""><strong>Assess scope</strong> — Which table? How critical? Is data actively being written?</li>
+<li class=""><strong>Declare incident</strong> — SEV1 if it&#x27;s a critical table (users, orders, payments).</li>
+<li class=""><strong>Prevent compounding</strong> — If application is crashing due to missing table, enable maintenance mode or circuit-break the affected endpoints.</li>
+</ol>
+<p><strong>Recovery (5-60 minutes):</strong></p>
+<ol>
+<li class="">
+<p><strong>Check if point-in-time recovery (PITR) is available:</strong></p>
+<ul>
+<li class="">AWS RDS: Restore to point-in-time just before deletion.</li>
+<li class="">This creates a new database instance with data intact.</li>
+</ul>
+</li>
+<li class="">
+<p><strong>If PITR unavailable, restore from backup:</strong></p>
+<ul>
+<li class="">Identify the most recent backup before the deletion.</li>
+<li class="">Restore to a new instance.</li>
+<li class="">Data written between backup and deletion is lost (RPO = backup interval).</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Recover only the deleted table:</strong></p>
+<ul>
+<li class="">Don&#x27;t replace the entire database — that would lose data written since the backup.</li>
+<li class="">Export just the deleted table from the restored backup.</li>
+<li class="">Import into the production database.</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Reconcile any lost data:</strong></p>
+<ul>
+<li class="">Check application logs, event queues, or CDC streams for writes that occurred between the last backup and the deletion.</li>
+<li class="">Replay those writes to minimize data loss.</li>
+</ul>
+</li>
+</ol>
+<p><strong>Prevention:</strong></p>
+<ul>
+<li class="">Restrict production database access (principle of least privilege).</li>
+<li class="">Require approval for destructive DDL (DROP, TRUNCATE).</li>
+<li class="">Enable deletion protection on critical databases.</li>
+<li class="">Use infrastructure-as-code for schema changes (migrations, not ad-hoc SQL).</li>
+<li class="">Continuous WAL/CDC replication for RPO ≈ 0.</li>
+</ul>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Ab5Z" id="category-6--scenario--design-questions">Category 6 — Scenario &amp; Design Questions<a href="#category-6--scenario--design-questions" class="hash-link" aria-label="Direct link to Category 6 — Scenario &amp; Design Questions" title="Direct link to Category 6 — Scenario &amp; Design Questions" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q19-design-a-system-that-can-handle-10x-traffic-spikes-during-flash-sales">Q19: Design a system that can handle 10x traffic spikes during flash sales.<a href="#q19-design-a-system-that-can-handle-10x-traffic-spikes-during-flash-sales" class="hash-link" aria-label="Direct link to Q19: Design a system that can handle 10x traffic spikes during flash sales." title="Direct link to Q19: Design a system that can handle 10x traffic spikes during flash sales." translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<p><strong>Challenges:</strong> Predictable but extreme load spike (10x normal), concentrated on specific endpoints (product page, cart, checkout), limited duration (minutes to hours).</p>
+<p><strong>Strategy:</strong></p>
+<ol>
+<li class="">
+<p><strong>Pre-scaling:</strong></p>
+<ul>
+<li class="">Scale compute to 10x capacity 30 minutes before sale starts.</li>
+<li class="">Pre-warm caches with sale product data.</li>
+<li class="">Pre-warm connection pools to databases and downstream services.</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Traffic management:</strong></p>
+<ul>
+<li class=""><strong>Virtual waiting room</strong> — Queue users before the sale page. Release in controlled batches.</li>
+<li class=""><strong>Rate limiting per user</strong> — Prevent bots from monopolizing capacity.</li>
+<li class=""><strong>CDN for static assets</strong> — Offload product images, CSS, JS to CDN.</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Architecture optimizations:</strong></p>
+<ul>
+<li class=""><strong>Read path:</strong> Cache product catalog aggressively (Redis, CDN). Serve stale prices if cache miss.</li>
+<li class=""><strong>Write path:</strong> Queue checkout requests. Process asynchronously. Show &quot;order pending&quot; immediately.</li>
+<li class=""><strong>Database:</strong> Read replicas for product queries. Primary only for inventory decrements.</li>
+<li class=""><strong>Inventory:</strong> Use optimistic locking or atomic decrements. Accept slight oversell risk and reconcile.</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Degradation plan:</strong></p>
+<ul>
+<li class="">If load exceeds 10x: shed non-critical features (recommendations, reviews, personalization).</li>
+<li class="">If checkout queue exceeds capacity: display wait time estimate, don&#x27;t accept new entries.</li>
+<li class="">If inventory service fails: fail-closed (don&#x27;t sell what you might not have).</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Monitoring:</strong></p>
+<ul>
+<li class="">Real-time dashboard for queue depth, error rate, latency, inventory levels.</li>
+<li class="">Pre-defined alerts with runbooks for each failure scenario.</li>
+<li class="">IC on standby during the sale window.</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q20-youre-responsible-for-reliability-of-a-service-handling-100k-requestssecond-how-do-you-approach-slo-based-alerting">Q20: You&#x27;re responsible for reliability of a service handling 100k requests/second. How do you approach SLO-based alerting?<a href="#q20-youre-responsible-for-reliability-of-a-service-handling-100k-requestssecond-how-do-you-approach-slo-based-alerting" class="hash-link" aria-label="Direct link to Q20: You&#x27;re responsible for reliability of a service handling 100k requests/second. How do you approach SLO-based alerting?" title="Direct link to Q20: You&#x27;re responsible for reliability of a service handling 100k requests/second. How do you approach SLO-based alerting?" translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<p><strong>Step 1 — Define SLOs:</strong></p>
+<ul>
+<li class="">Availability: 99.95% of requests return non-5xx in a 30-day window.</li>
+<li class="">Latency: 99% of requests complete in &lt; 200ms.</li>
+<li class="">Error budget: 0.05% = 21.6 minutes of downtime per month.</li>
+</ul>
+<p><strong>Step 2 — Calculate burn rates:</strong></p>
+<p>At 100k req/s, allowed error rate = 0.05% = 50 errors/second.</p>
+<table><thead><tr><th style="text-align:center">Alert</th><th style="text-align:center">Burn Rate</th><th>Meaning</th><th style="text-align:center">Long Window</th><th style="text-align:center">Short Window</th><th>Action</th></tr></thead><tbody><tr><td style="text-align:center">P1</td><td style="text-align:center">14.4x</td><td>Budget gone in 50 min</td><td style="text-align:center">1 hour</td><td style="text-align:center">5 min</td><td>Page immediately</td></tr><tr><td style="text-align:center">P2</td><td style="text-align:center">6x</td><td>Budget gone in 5 hours</td><td style="text-align:center">6 hours</td><td style="text-align:center">30 min</td><td>Page</td></tr><tr><td style="text-align:center">P3</td><td style="text-align:center">3x</td><td>Budget gone in 10 days</td><td style="text-align:center">1 day</td><td style="text-align:center">2 hours</td><td>Ticket</td></tr><tr><td style="text-align:center">P4</td><td style="text-align:center">1x</td><td>On track to exhaust in 30 days</td><td style="text-align:center">3 days</td><td style="text-align:center">6 hours</td><td>Low-priority ticket</td></tr></tbody></table>
+<p><strong>Step 3 — Multi-window alert logic:</strong></p>
+<div class="language-text codeBlockContainer_LW_r theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_Yo7j"><pre tabindex="0" class="prism-code language-text codeBlock_hY9W thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_zk3A"><div class="token-line" style="color:#F8F8F2"><span class="token plain">fire_alert = (</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">    error_rate_in_long_window &gt; SLO_error_rate * burn_rate</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">    AND</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">    error_rate_in_short_window &gt; SLO_error_rate * burn_rate</span><br></div><div class="token-line" style="color:#F8F8F2"><span class="token plain">)</span><br></div></code></pre></div></div>
+<p>The long window catches sustained problems. The short window confirms the issue is still happening (avoids alerting on a resolved spike).</p>
+<p><strong>Step 4 — What NOT to alert on:</strong></p>
+<ul>
+<li class="">Don&#x27;t alert on CPU &gt; 80% — that&#x27;s a cause, not a symptom.</li>
+<li class="">Don&#x27;t alert on individual server errors — they&#x27;re noise.</li>
+<li class="">Don&#x27;t alert on dependency health checks — alert on your own SLIs.</li>
+<li class="">Do alert when error budget is being consumed faster than expected.</li>
+</ul>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q21-how-would-you-implement-a-production-readiness-review-for-a-new-microservice">Q21: How would you implement a production readiness review for a new microservice?<a href="#q21-how-would-you-implement-a-production-readiness-review-for-a-new-microservice" class="hash-link" aria-label="Direct link to Q21: How would you implement a production readiness review for a new microservice?" title="Direct link to Q21: How would you implement a production readiness review for a new microservice?" translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<p>A PRR ensures a new service meets reliability standards before receiving production traffic. Structure it as a collaborative checklist, not a gate.</p>
+<p><strong>Process:</strong></p>
+<ol>
+<li class="">
+<p><strong>Early engagement</strong> — SRE/platform team reviews the design doc for reliability concerns (dependencies, failure modes, data durability).</p>
+</li>
+<li class="">
+<p><strong>Pre-launch checklist:</strong></p>
+<table><thead><tr><th>Category</th><th>Items</th></tr></thead><tbody><tr><td><strong>Observability</strong></td><td>SLIs instrumented, dashboards built, structured logging, distributed tracing</td></tr><tr><td><strong>Alerting</strong></td><td>SLO-based alerts configured, on-call rotation established, escalation path documented</td></tr><tr><td><strong>Resilience</strong></td><td>Circuit breakers on all downstream calls, timeouts configured, retry with backoff, graceful degradation for non-critical deps</td></tr><tr><td><strong>Data</strong></td><td>Backup strategy defined and tested, retention policies set, PITR enabled for databases</td></tr><tr><td><strong>Security</strong></td><td>AuthN/AuthZ, input validation, rate limiting, no hardcoded secrets</td></tr><tr><td><strong>Capacity</strong></td><td>Load tested to 2x expected peak, auto-scaling configured, resource limits set</td></tr><tr><td><strong>Deployment</strong></td><td>Canary pipeline, rollback tested, feature flags for risky paths</td></tr><tr><td><strong>Runbooks</strong></td><td>Runbook for top 5 anticipated failure scenarios, written and reviewed</td></tr><tr><td><strong>Dependencies</strong></td><td>All downstream services documented, critical vs non-critical classified</td></tr></tbody></table>
+</li>
+<li class="">
+<p><strong>Review meeting</strong> — Service team presents to SRE/platform team. Walk through each category. Identify gaps.</p>
+</li>
+<li class="">
+<p><strong>Graduation</strong> — Once all P0 items are resolved, approve for production. P1/P2 items can be tracked as follow-up work.</p>
+</li>
+<li class="">
+<p><strong>Post-launch review</strong> — After 2 weeks in production, review actual SLI data. Adjust SLOs, alerts, and capacity based on real traffic.</p>
+</li>
+</ol>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Ab5Z" id="q22-explain-how-you-would-handle-a-split-brain-scenario-in-a-distributed-database-during-a-network-partition">Q22: Explain how you would handle a split-brain scenario in a distributed database during a network partition.<a href="#q22-explain-how-you-would-handle-a-split-brain-scenario-in-a-distributed-database-during-a-network-partition" class="hash-link" aria-label="Direct link to Q22: Explain how you would handle a split-brain scenario in a distributed database during a network partition." title="Direct link to Q22: Explain how you would handle a split-brain scenario in a distributed database during a network partition." translate="no">​</a></h3>
+<p><strong>Answer:</strong></p>
+<p><strong>Split-brain</strong> occurs when a network partition causes two nodes to both believe they are the primary, accepting writes independently. This can lead to data divergence and corruption.</p>
+<p><strong>Prevention:</strong></p>
+<ol>
+<li class="">
+<p><strong>Quorum-based consensus</strong> — Use an odd number of nodes (3, 5). A node needs majority agreement (quorum) to become primary. With 3 nodes, if the partition splits 2-1, only the side with 2 nodes can form a quorum and accept writes.</p>
+</li>
+<li class="">
+<p><strong>Fencing tokens</strong> — When a new leader is elected, it gets a monotonically increasing token. Storage nodes reject writes from leaders with old tokens, preventing stale leaders from corrupting data.</p>
+</li>
+<li class="">
+<p><strong>STONITH (Shoot The Other Node In The Head)</strong> — The surviving side forcefully shuts down the other side (via out-of-band mechanism like IPMI). Ensures only one side is operational.</p>
+</li>
+</ol>
+<p><strong>Recovery if split-brain occurred:</strong></p>
+<ol>
+<li class="">Identify the period of split-brain (dual-primary).</li>
+<li class="">Compare writes from both sides during that period.</li>
+<li class="">Apply conflict resolution: last-writer-wins, application-specific merge, or manual reconciliation.</li>
+<li class="">For financial data, manual reconciliation is often required — automated merge can&#x27;t determine business intent.</li>
+</ol>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Ab5Z" id="summary--top-10-things-to-remember">Summary — Top 10 Things to Remember<a href="#summary--top-10-things-to-remember" class="hash-link" aria-label="Direct link to Summary — Top 10 Things to Remember" title="Direct link to Summary — Top 10 Things to Remember" translate="no">​</a></h2>
+<ol>
+<li class=""><strong>SLO = SLI + Target + Window.</strong> SLOs drive decisions; SLAs are contracts.</li>
+<li class=""><strong>Error budget = 1 - SLO.</strong> Budget healthy → ship fast. Budget exhausted → freeze.</li>
+<li class=""><strong>Compound availability degrades fast.</strong> 10 deps at 99.9% = 99.0% overall.</li>
+<li class=""><strong>Circuit breaker:</strong> Closed → Open → Half-Open. Always provide fallback.</li>
+<li class=""><strong>Always use jitter with retries.</strong> Full jitter prevents thundering herd.</li>
+<li class=""><strong>Timeouts + Circuit Breakers + Bulkheads</strong> = resilience triad for every call.</li>
+<li class=""><strong>Token bucket</strong> is the standard API rate limiting algorithm.</li>
+<li class=""><strong>Mitigation first, investigation second.</strong> Rollback, then understand why.</li>
+<li class=""><strong>RTO = how long can you be down. RPO = how much data can you lose.</strong></li>
+<li class=""><strong>Test your DR plan.</strong> Untested recovery is wishful thinking.</li>
+</ol>
+<hr></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_KHjL"></div><div class="col lastUpdated_Mx_J"><span class="theme-last-updated">Last updated<!-- --> on <b><time datetime="2026-04-14T09:38:14.000Z" itemprop="dateModified">Apr 14, 2026</time></b> by <b>HoHuy2402</b></span></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/pages/p016614/DOC/docs/Technical-Knowledge/Reliability-Engineering/04-incident-management-dr"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">04 — Incident Management &amp; DR</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/pages/p016614/DOC/docs/Technical-Knowledge/Observability/"><div class="pagination-nav__sublabel">Next</div><div class="pagination-nav__label">Observability Guide</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_CKat thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#quick-reference-tables" class="table-of-contents__link toc-highlight">Quick Reference Tables</a><ul><li><a href="#nines-table" class="table-of-contents__link toc-highlight">Nines Table</a></li><li><a href="#circuit-breaker-states" class="table-of-contents__link toc-highlight">Circuit Breaker States</a></li><li><a href="#rate-limiting-algorithm-comparison" class="table-of-contents__link toc-highlight">Rate Limiting Algorithm Comparison</a></li><li><a href="#dr-pattern-comparison" class="table-of-contents__link toc-highlight">DR Pattern Comparison</a></li></ul></li><li><a href="#category-1--sre-fundamentals" class="table-of-contents__link toc-highlight">Category 1 — SRE Fundamentals</a><ul><li><a href="#q1-whats-the-difference-between-sla-slo-and-sli-give-concrete-examples" class="table-of-contents__link toc-highlight">Q1: What&#39;s the difference between SLA, SLO, and SLI? Give concrete examples.</a></li><li><a href="#q2-how-would-you-set-slos-for-a-brand-new-service" class="table-of-contents__link toc-highlight">Q2: How would you set SLOs for a brand-new service?</a></li><li><a href="#q3-explain-error-budgets-and-how-they-affect-feature-velocity" class="table-of-contents__link toc-highlight">Q3: Explain error budgets and how they affect feature velocity.</a></li><li><a href="#q4-your-service-calls-10-downstream-dependencies-each-at-999-availability-whats-the-overall-availability-how-do-you-improve-it" class="table-of-contents__link toc-highlight">Q4: Your service calls 10 downstream dependencies, each at 99.9% availability. What&#39;s the overall availability? How do you improve it?</a></li></ul></li><li><a href="#category-2--resilience-patterns" class="table-of-contents__link toc-highlight">Category 2 — Resilience Patterns</a><ul><li><a href="#q5-explain-the-circuit-breaker-pattern-walk-through-all-three-states" class="table-of-contents__link toc-highlight">Q5: Explain the circuit breaker pattern. Walk through all three states.</a></li><li><a href="#q6-when-would-you-use-exponential-backoff-with-jitter-vs-without" class="table-of-contents__link toc-highlight">Q6: When would you use exponential backoff with jitter vs without?</a></li><li><a href="#q7-how-do-you-prevent-cascading-failures-in-a-microservice-architecture" class="table-of-contents__link toc-highlight">Q7: How do you prevent cascading failures in a microservice architecture?</a></li><li><a href="#q8-explain-the-difference-between-fail-fast-and-fail-safe-when-do-you-use-each" class="table-of-contents__link toc-highlight">Q8: Explain the difference between fail-fast and fail-safe. When do you use each?</a></li></ul></li><li><a href="#category-3--rate-limiting" class="table-of-contents__link toc-highlight">Category 3 — Rate Limiting</a><ul><li><a href="#q9-design-rate-limiting-for-a-global-api-serving-millions-of-requests-per-second" class="table-of-contents__link toc-highlight">Q9: Design rate limiting for a global API serving millions of requests per second.</a></li><li><a href="#q10-compare-token-bucket-and-sliding-window-counter-when-would-you-choose-each" class="table-of-contents__link toc-highlight">Q10: Compare token bucket and sliding window counter. When would you choose each?</a></li><li><a href="#q11-how-would-you-handle-rate-limiting-when-your-redis-cluster-goes-down" class="table-of-contents__link toc-highlight">Q11: How would you handle rate limiting when your Redis cluster goes down?</a></li></ul></li><li><a href="#category-4--incident-management" class="table-of-contents__link toc-highlight">Category 4 — Incident Management</a><ul><li><a href="#q12-your-services-error-rate-doubles-after-a-deploy-walk-through-your-response" class="table-of-contents__link toc-highlight">Q12: Your service&#39;s error rate doubles after a deploy. Walk through your response.</a></li><li><a href="#q13-write-a-postmortem-for-the-following-scenario-a-database-migration-deleted-a-column-that-was-still-in-use-causing-500-errors-for-45-minutes" class="table-of-contents__link toc-highlight">Q13: Write a postmortem for the following scenario: A database migration deleted a column that was still in use, causing 500 errors for 45 minutes.</a></li><li><a href="#q14-how-do-you-structure-an-on-call-rotation-to-avoid-burnout" class="table-of-contents__link toc-highlight">Q14: How do you structure an on-call rotation to avoid burnout?</a></li></ul></li><li><a href="#category-5--disaster-recovery" class="table-of-contents__link toc-highlight">Category 5 — Disaster Recovery</a><ul><li><a href="#q15-design-a-disaster-recovery-plan-for-a-payment-processing-system" class="table-of-contents__link toc-highlight">Q15: Design a disaster recovery plan for a payment processing system.</a></li><li><a href="#q16-compare-rto-and-rpo-how-do-you-determine-the-right-values-for-a-service" class="table-of-contents__link toc-highlight">Q16: Compare RTO and RPO. How do you determine the right values for a service?</a></li><li><a href="#q17-how-would-you-test-disaster-recovery-without-impacting-production" class="table-of-contents__link toc-highlight">Q17: How would you test disaster recovery without impacting production?</a></li><li><a href="#q18-a-junior-engineer-accidentally-deleted-a-production-database-table-walk-through-the-recovery-process" class="table-of-contents__link toc-highlight">Q18: A junior engineer accidentally deleted a production database table. Walk through the recovery process.</a></li></ul></li><li><a href="#category-6--scenario--design-questions" class="table-of-contents__link toc-highlight">Category 6 — Scenario &amp; Design Questions</a><ul><li><a href="#q19-design-a-system-that-can-handle-10x-traffic-spikes-during-flash-sales" class="table-of-contents__link toc-highlight">Q19: Design a system that can handle 10x traffic spikes during flash sales.</a></li><li><a href="#q20-youre-responsible-for-reliability-of-a-service-handling-100k-requestssecond-how-do-you-approach-slo-based-alerting" class="table-of-contents__link toc-highlight">Q20: You&#39;re responsible for reliability of a service handling 100k requests/second. How do you approach SLO-based alerting?</a></li><li><a href="#q21-how-would-you-implement-a-production-readiness-review-for-a-new-microservice" class="table-of-contents__link toc-highlight">Q21: How would you implement a production readiness review for a new microservice?</a></li><li><a href="#q22-explain-how-you-would-handle-a-split-brain-scenario-in-a-distributed-database-during-a-network-partition" class="table-of-contents__link toc-highlight">Q22: Explain how you would handle a split-brain scenario in a distributed database during a network partition.</a></li></ul></li><li><a href="#summary--top-10-things-to-remember" class="table-of-contents__link toc-highlight">Summary — Top 10 Things to Remember</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Quick Links</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/pages/p016614/DOC/">Home</a></li><li class="footer__item"><a class="footer__link-item" href="/pages/p016614/DOC/docs/intro">All Docs</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Learning Paths</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/pages/p016614/DOC/docs/Technical-Knowledge/Kafka/">Kafka</a></li><li class="footer__item"><a class="footer__link-item" href="/pages/p016614/DOC/docs/Technical-Knowledge/AWS/">AWS</a></li><li class="footer__item"><a class="footer__link-item" href="/pages/p016614/DOC/dsa-roadmap">DSA Training</a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">© 2026 Personal Knowledge Base — Built with caffeine & curiosity.</div></div></div></footer></div>
+</body>
+</html>
