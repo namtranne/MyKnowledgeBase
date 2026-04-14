@@ -1,0 +1,15 @@
+# dependencies
+node_modules/
+
+# generated output
+build/
+.docusaurus/
+
+# local cache
+.npm-cache/
+
+# system files
+.DS_Store
+.cursor/.endpoint-risk-state.json
+.cursor/.workspace-profile.json
+.cursor/.workspace-profile.log

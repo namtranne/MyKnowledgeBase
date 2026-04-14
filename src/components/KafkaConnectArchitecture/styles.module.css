@@ -1,0 +1,452 @@
+/* ═══════════════════════════════════════════════════════
+   Kafka Connect Architecture — Interactive Diagram
+   Pan/Zoom + Fullscreen + Animated Edges
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Container ── */
+.flowContainer {
+  position: relative;
+  margin: 2rem 0;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #0a0a1a 0%, #0d1117 50%, #0a0a1a 100%);
+  border: 1px solid rgba(0, 240, 255, 0.12);
+  overflow: hidden;
+}
+
+.flowContainerFullscreen {
+  border-radius: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+}
+
+.flowContainerFullscreen .svgWrap {
+  flex: 1;
+  min-height: 0;
+}
+
+.flowHeader {
+  padding: 1.5rem 1.5rem 0;
+}
+
+.flowTitle {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.flowTitleIcon {
+  font-size: 1.3rem;
+}
+
+.flowSubtitle {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin: 0.25rem 0 0;
+}
+
+/* ── Legend ── */
+.legendRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  padding: 0.75rem 1.5rem;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── SVG Viewport ── */
+.svgWrap {
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+}
+
+.flowSvg {
+  display: block;
+  width: 100%;
+  height: 500px;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.flowContainerFullscreen .flowSvg {
+  height: 100%;
+}
+
+.flowSvgDragging {
+  cursor: grabbing;
+}
+
+/* ── Control Bar ── */
+.controlBar {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(100, 116, 139, 0.3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 10;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.controlBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.controlBtn:hover {
+  background: rgba(100, 116, 139, 0.2);
+  color: #e2e8f0;
+}
+
+.controlBtn:active {
+  background: rgba(100, 116, 139, 0.35);
+}
+
+.controlZoomLabel {
+  font-size: 0.65rem;
+  color: #64748b;
+  min-width: 36px;
+  text-align: center;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+.controlDivider {
+  width: 1px;
+  height: 20px;
+  background: rgba(100, 116, 139, 0.25);
+  margin: 0 2px;
+}
+
+/* ── Phase Regions ── */
+.phaseLabel {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ── Edges ── */
+.edgeGroup {
+  opacity: 0;
+}
+.edgeVisible {
+  animation: edgeFadeIn 0.8s ease both;
+}
+
+@keyframes edgeFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.edgePath {
+  fill: none;
+  stroke: rgba(148, 163, 184, 0.4);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+  animation: marchDash 1s linear infinite;
+}
+
+@keyframes marchDash {
+  to { stroke-dashoffset: -20; }
+}
+
+.edgeDot {
+  fill: #00f0ff;
+  opacity: 1;
+  filter: drop-shadow(0 0 4px rgba(0, 240, 255, 0.8)) drop-shadow(0 0 10px rgba(0, 240, 255, 0.4));
+}
+
+.edgeDotTrail {
+  fill: #a855f7;
+  opacity: 0.7;
+  filter: drop-shadow(0 0 3px rgba(168, 85, 247, 0.7));
+}
+
+.edgeLabel {
+  font-size: 8px;
+  fill: #94a3b8;
+  text-anchor: middle;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ── Nodes ── */
+.nodeGroup {
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.nodeVisible {
+  opacity: 1;
+  animation: nodeEntrance 0.5s ease both;
+  animation-delay: calc(var(--i) * 45ms);
+}
+
+.nodeRect {
+  fill: rgba(15, 23, 42, 0.92);
+  stroke: var(--node-color);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--node-color) 22%, transparent));
+  transition: stroke-width 0.2s ease, filter 0.2s ease, fill 0.2s ease;
+}
+
+.nodeGroup:hover .nodeRect {
+  stroke-width: 2.4;
+  fill: rgba(15, 23, 42, 0.98);
+  filter: drop-shadow(0 0 16px color-mix(in srgb, var(--node-color) 50%, transparent));
+}
+
+.nodeSelected .nodeRect {
+  stroke-width: 2.8;
+  fill: rgba(15, 23, 42, 1);
+  filter: drop-shadow(0 0 22px color-mix(in srgb, var(--node-color) 60%, transparent));
+}
+
+.nodeIcon {
+  font-size: 20px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+.nodeLabel {
+  font-size: 9px;
+  fill: #e2e8f0;
+  text-anchor: middle;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  pointer-events: none;
+}
+
+.nodeSublabel {
+  font-size: 7px;
+  fill: #64748b;
+  text-anchor: middle;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  pointer-events: none;
+}
+
+/* ── Tooltip (hover) ── */
+.tooltipGroup {
+  pointer-events: none;
+  animation: tooltipFade 0.15s ease both;
+}
+
+.tooltipBg {
+  fill: rgba(15, 23, 42, 0.95);
+  stroke-width: 1;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.5));
+}
+
+.tooltipText {
+  font-size: 7px;
+  fill: #cbd5e1;
+  text-anchor: middle;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* ── Detail Panel (click) ── */
+.detailPanel {
+  margin: 0.5rem 1rem 1rem;
+  padding: 1.25rem;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid color-mix(in srgb, var(--panel-color) 30%, transparent);
+  animation: panelSlideIn 0.3s ease;
+  position: relative;
+  backdrop-filter: blur(8px);
+}
+
+.detailClose {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: none;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.85rem;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+.detailClose:hover {
+  border-color: #64748b;
+  color: #e2e8f0;
+  background: rgba(51, 65, 85, 0.3);
+}
+
+.detailHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.detailIcon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.detailBadge {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 1px solid;
+  border-radius: 4px;
+  padding: 1px 6px;
+  display: inline-block;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+}
+
+.detailTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin: 0;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.detailSublabel {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.detailDesc {
+  font-size: 0.88rem;
+  line-height: 1.65;
+  color: #cbd5e1;
+  margin: 0.5rem 0;
+}
+
+.detailList {
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.detailList li {
+  position: relative;
+  padding-left: 1.1rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  line-height: 1.55;
+}
+
+.detailList li::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  color: var(--bullet-color, #64748b);
+  font-weight: bold;
+}
+
+/* ── Animations ── */
+@keyframes nodeEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes panelSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tooltipFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .flowHeader {
+    padding: 1rem 1rem 0;
+  }
+  .flowTitle {
+    font-size: 1.1rem;
+  }
+  .legendRow {
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+  }
+  .legendItem {
+    font-size: 0.62rem;
+  }
+  .flowSvg {
+    height: 360px;
+  }
+  .detailPanel {
+    margin: 0.5rem 0.75rem 0.75rem;
+    padding: 1rem;
+  }
+  .detailTitle {
+    font-size: 1rem;
+  }
+  .controlBar {
+    bottom: 8px;
+    right: 8px;
+  }
+  .controlBtn {
+    width: 28px;
+    height: 28px;
+  }
+}

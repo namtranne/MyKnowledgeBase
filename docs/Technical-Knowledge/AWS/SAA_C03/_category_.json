@@ -1,0 +1,9 @@
+{
+  "label": "SAA-C03 Study Guide",
+  "position": 2,
+  "collapsed": true,
+  "link": {
+    "type": "generated-index",
+    "description": "Comprehensive study guide for the AWS Solutions Architect Associate (SAA-C03) exam — covering all four domains, every in-scope service, and exam strategies."
+  }
+}

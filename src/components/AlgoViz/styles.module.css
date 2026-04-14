@@ -1,0 +1,395 @@
+/* AlgoViz — Step-by-step algorithm animation */
+
+.vizContainer {
+  margin: 1.5rem 0;
+  border-radius: 16px;
+  border: 1px solid #1e293b;
+  background: linear-gradient(145deg, #0a0f1f, #0f162988);
+  overflow: hidden;
+}
+
+.vizHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.9rem 1.2rem;
+  border-bottom: 1px solid #1e293b;
+  background: #0f162966;
+}
+
+.vizIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #00f0ff22, #a855f722);
+  border: 1px solid #00f0ff44;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: #00f0ff;
+  flex-shrink: 0;
+}
+
+.vizTitle {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.vizDesc {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.1rem;
+}
+
+.vizBody {
+  padding: 1.2rem;
+  min-height: 80px;
+}
+
+/* Array row */
+.arrayRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 0.8rem;
+  justify-content: center;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 40px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1.5px solid #334155;
+  background: #1e293b66;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.cellHighlight {
+  border-color: #00f0ff;
+  background: #00f0ff18;
+  box-shadow: 0 0 12px #00f0ff33;
+  transform: scale(1.08);
+}
+
+.cellSecondary {
+  border-color: #a855f7;
+  background: #a855f718;
+  box-shadow: 0 0 10px #a855f733;
+}
+
+.cellShrink {
+  opacity: 0.4;
+  transform: scale(0.9);
+}
+
+.cellValue {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.cellLabel {
+  font-size: 0.6rem;
+  color: #64748b;
+  margin-top: 2px;
+  font-weight: 600;
+}
+
+.pointer {
+  position: absolute;
+  top: -18px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #00f0ff;
+  white-space: nowrap;
+}
+
+/* Stack */
+.stackWrap {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  margin-right: 1.2rem;
+}
+
+.stackLabel {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.3rem;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  border: 1.5px solid #334155;
+  border-radius: 8px;
+  min-width: 60px;
+  overflow: hidden;
+}
+
+.stackEmpty {
+  padding: 0.4rem 0.6rem;
+  color: #475569;
+  font-size: 0.75rem;
+  font-style: italic;
+  text-align: center;
+}
+
+.stackItem {
+  padding: 0.3rem 0.6rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  color: #e2e8f0;
+  border-bottom: 1px solid #1e293b;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.stackItem:last-child {
+  border-bottom: none;
+}
+
+.stackItemHighlight {
+  background: #00f0ff18;
+  color: #00f0ff;
+}
+
+/* HashMap */
+.hashWrap {
+  display: inline-flex;
+  flex-direction: column;
+}
+
+.hashLabel {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.3rem;
+}
+
+.hashGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.hashEntry {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  background: #1e293b44;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+}
+
+.hashKey {
+  color: #a855f7;
+  font-weight: 700;
+}
+
+.hashArrow {
+  color: #475569;
+}
+
+.hashVal {
+  color: #00f0ff;
+  font-weight: 600;
+}
+
+/* Tree */
+.treeNode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.treeVal {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  background: #1e293b66;
+  transition: all 0.3s;
+}
+
+.treeValHighlight {
+  border-color: #00f0ff;
+  background: #00f0ff22;
+  color: #00f0ff;
+  box-shadow: 0 0 10px #00f0ff44;
+}
+
+.treeChildren {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px dashed #334155;
+}
+
+.treeNull {
+  font-size: 0.65rem;
+  color: #475569;
+  font-style: italic;
+}
+
+/* Variables */
+.vizAux {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.varsRow {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.6rem;
+}
+
+.varChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid #334155;
+  background: #1e293b44;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+}
+
+.varName {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.varVal {
+  color: #f59e0b;
+  font-weight: 700;
+}
+
+/* Explanation */
+.explanation {
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  border-left: 3px solid #00f0ff;
+  background: #00f0ff08;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+
+.codeLine {
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  background: #0f1629;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  color: #00f0ff;
+  overflow-x: auto;
+}
+
+/* Controls */
+.vizControls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.2rem;
+  border-top: 1px solid #1e293b;
+  background: #0f162966;
+}
+
+.vizBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.vizBtn:hover:not(:disabled) {
+  border-color: #00f0ff55;
+  color: #00f0ff;
+  background: #00f0ff0a;
+}
+
+.vizBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.vizBtnPlay {
+  background: #00f0ff15;
+  border-color: #00f0ff44;
+  color: #00f0ff;
+}
+
+.vizStep {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: #64748b;
+  margin-left: 0.5rem;
+  white-space: nowrap;
+}
+
+.vizProgress {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: #1e293b;
+  margin-left: 0.5rem;
+  overflow: hidden;
+}
+
+.vizProgressFill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #00f0ff, #a855f7);
+  transition: width 0.3s ease;
+}
+
+@media (max-width: 600px) {
+  .cell {
+    min-width: 32px;
+    padding: 4px 6px;
+  }
+  .cellValue {
+    font-size: 0.75rem;
+  }
+  .vizBody {
+    padding: 0.8rem;
+  }
+}

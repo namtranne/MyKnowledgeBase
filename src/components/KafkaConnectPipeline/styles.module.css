@@ -1,0 +1,437 @@
+/* ═══════════════════════════════════════════════════════
+   Kafka Connect Deployment Pipeline — Animated Component
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Pipeline color tokens ── */
+:root {
+  --pipeline-color-1: #00f0ff;
+  --pipeline-color-2: #a855f7;
+  --pipeline-color-3: #f472b6;
+  --pipeline-color-4: #34d399;
+}
+
+/* ── Container ── */
+.pipelineContainer {
+  position: relative;
+  padding: 1.5rem 1.25rem 1.75rem;
+  margin: 1.5rem 0 2.5rem;
+  overflow: hidden;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #0a0a1a 0%, #0d1117 50%, #0a0a1a 100%);
+  border: 1px solid rgba(0, 240, 255, 0.1);
+}
+
+.pipelineTitle {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  text-align: center;
+  background: linear-gradient(90deg, #00f0ff, #a855f7, #f472b6, #34d399);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.3rem;
+}
+
+.pipelineTitleIcon {
+  -webkit-text-fill-color: initial;
+  margin-right: 0.4rem;
+}
+
+.pipelineSubtitle {
+  text-align: center;
+  color: #64748b;
+  font-size: 0.88rem;
+  margin-bottom: 2rem;
+}
+
+/* ── Signal sweep ── */
+.signalSweep {
+  position: absolute;
+  top: 0;
+  left: -20%;
+  width: 20%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 240, 255, 0.03),
+    rgba(0, 240, 255, 0.06),
+    rgba(0, 240, 255, 0.03),
+    transparent
+  );
+  animation: sweepSignal 6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes sweepSignal {
+  0%   { left: -20%; }
+  100% { left: 120%; }
+}
+
+/* ── Pipeline track — horizontal layout ── */
+.pipelineTrack {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  position: relative;
+  z-index: 1;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0 0.25rem 0.5rem;
+}
+
+/* ── Flow lines between stages ── */
+.flowLineWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  min-width: 52px;
+  flex-shrink: 1;
+  padding-top: 4.5rem;
+}
+
+.flowLineSvg {
+  width: 100%;
+  height: 40px;
+  overflow: visible;
+}
+
+.flowPath {
+  fill: none;
+  stroke: rgba(100, 116, 139, 0.15);
+  stroke-width: 2;
+  transition: stroke 0.6s ease;
+}
+
+.flowPathVisible {
+  stroke: rgba(148, 163, 184, 0.4);
+  stroke-dasharray: 6 4;
+  animation: marchDash 1s linear infinite;
+}
+
+@keyframes marchDash {
+  to { stroke-dashoffset: -20; }
+}
+
+.flowDot {
+  fill: #00f0ff;
+  filter: drop-shadow(0 0 4px rgba(0, 240, 255, 0.8)) drop-shadow(0 0 10px rgba(0, 240, 255, 0.4));
+  opacity: 1;
+}
+
+.flowDotTrail {
+  fill: #a855f7;
+  filter: drop-shadow(0 0 3px rgba(168, 85, 247, 0.7));
+  opacity: 0.7;
+}
+
+.flowLabel {
+  font-size: 0.6rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 0.25rem;
+  opacity: 0;
+  animation: labelFadeIn 0.5s ease forwards;
+  white-space: nowrap;
+}
+
+@keyframes labelFadeIn {
+  to { opacity: 1; }
+}
+
+/* ── Stage card ── */
+.stageCard {
+  position: relative;
+  width: 200px;
+  min-width: 0;
+  flex: 1 1 200px;
+  max-width: 230px;
+  padding: 1.2rem 1rem 0.8rem;
+  border-radius: 16px;
+  border: 1px solid rgba(30, 41, 59, 0.8);
+  background: linear-gradient(145deg, rgba(15, 22, 41, 0.95), rgba(21, 29, 51, 0.95));
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  opacity: 0;
+  transform: translateY(24px);
+  overflow: hidden;
+}
+
+.stageCard:focus-visible {
+  outline: 2px solid var(--stage-color);
+  outline-offset: 3px;
+}
+
+.stageCardVisible {
+  animation: cardEntrance 0.5s ease forwards;
+  animation-delay: calc(var(--i) * 0.15s);
+}
+
+@keyframes cardEntrance {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Glow backdrop */
+.stageGlow {
+  position: absolute;
+  inset: -1px;
+  border-radius: 16px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    color-mix(in srgb, var(--stage-color) 15%, transparent),
+    transparent 70%
+  );
+}
+
+/* Pulsing border glow */
+.stageCardVisible {
+  border-color: color-mix(in srgb, var(--stage-color) 30%, #1e293b);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--stage-color) 10%, transparent),
+    0 4px 20px rgba(0, 0, 0, 0.3);
+  animation:
+    cardEntrance 0.5s ease forwards,
+    pulseGlow 3s ease-in-out infinite;
+  animation-delay:
+    calc(var(--i) * 0.15s),
+    calc(var(--i) * 0.75s + 0.8s);
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--stage-color) 10%, transparent),
+      0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--stage-color) 25%, transparent),
+      0 0 25px color-mix(in srgb, var(--stage-color) 15%, transparent),
+      0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Hover */
+.stageCard:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--stage-color) 60%, #1e293b);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--stage-color) 30%, transparent),
+    0 0 30px color-mix(in srgb, var(--stage-color) 20%, transparent),
+    0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.stageCard:hover .stageGlow {
+  opacity: 1;
+}
+
+/* ── Stage card internals ── */
+.stageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+
+.stageIcon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.stageLayer {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--stage-color);
+  background: color-mix(in srgb, var(--stage-color) 12%, transparent);
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+}
+
+.stageTitle {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #e2e8f0;
+  margin: 0 0 0.4rem;
+  line-height: 1.3;
+}
+
+.stageRepo {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--stage-color);
+  background: color-mix(in srgb, var(--stage-color) 8%, #0a0e1a);
+  border: 1px solid color-mix(in srgb, var(--stage-color) 20%, #1e293b);
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  margin-bottom: 0.6rem;
+}
+
+.stageDesc {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin: 0.5rem 0 0.7rem;
+}
+
+.stageOutput {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgba(30, 41, 59, 0.6);
+}
+
+.stageOutputLabel {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #475569;
+}
+
+.stageOutputValue {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: #64748b;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+/* ── Expand/collapse details ── */
+.stageDetails {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, opacity 0.3s ease, margin 0.3s ease;
+  opacity: 0;
+  margin-top: 0;
+}
+
+.stageCardExpanded .stageDetails {
+  max-height: 500px;
+  opacity: 1;
+  margin-top: 0.8rem;
+}
+
+.stageDetailsMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid rgba(30, 41, 59, 0.6);
+}
+
+.stageMetaItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stageMetaLabel {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #475569;
+}
+
+.stageMetaValue {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  text-align: right;
+}
+
+.stageDetailsList {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+}
+
+.stageDetailsList li {
+  font-size: 0.72rem;
+  color: #64748b;
+  padding: 0.25rem 0 0.25rem 1rem;
+  position: relative;
+  line-height: 1.4;
+}
+
+.stageDetailsList li::before {
+  content: '›';
+  position: absolute;
+  left: 0.2rem;
+  color: var(--stage-color);
+  font-weight: 700;
+}
+
+.expandHint {
+  text-align: center;
+  font-size: 0.62rem;
+  color: #334155;
+  margin-top: 0.5rem;
+  transition: color 0.2s;
+}
+
+.stageCard:hover .expandHint {
+  color: #475569;
+}
+
+/* ═══════════════════════════════════════
+   Responsive — vertical stack on mobile
+   ═══════════════════════════════════════ */
+@media (max-width: 1100px) {
+  .pipelineTrack {
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  .stageCard {
+    width: 100%;
+    max-width: 420px;
+    flex: none;
+  }
+
+  .flowLineWrap {
+    width: 40px;
+    height: 50px;
+    padding-top: 0;
+    transform: rotate(90deg);
+  }
+
+  .pipelineContainer {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .stageCard {
+    min-width: unset;
+    padding: 1rem;
+  }
+
+  .pipelineTitle {
+    font-size: 1.2rem;
+  }
+
+  .pipelineContainer {
+    padding: 1rem 0.75rem;
+  }
+}
