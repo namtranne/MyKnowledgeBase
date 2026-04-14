@@ -10,7 +10,7 @@ module.exports = async function createConfigAsync() {
     tagline: 'Personal technical notes & deep-dive guides',
 
     url: 'https://github.aus.thenational.com',
-    baseUrl: '/pages/p016614/DOC/',
+    baseUrl: '/MyKnowledgeBase/',
 
     organizationName: 'p016614',
     projectName: 'DOC',
