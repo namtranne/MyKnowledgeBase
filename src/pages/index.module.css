@@ -297,3 +297,89 @@
   margin-bottom: 2rem;
   line-height: 1.6;
 }
+
+@media (max-width: 768px) {
+  .hero {
+    padding: 5.5rem 1rem 3rem;
+  }
+
+  .heroGlow {
+    width: 320px;
+    height: 320px;
+    top: -70px;
+  }
+
+  .heroTitle {
+    font-size: clamp(2rem, 9vw, 2.8rem);
+  }
+
+  .heroSub {
+    font-size: 1rem;
+    margin-bottom: 1.6rem;
+  }
+
+  .heroCta {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  .btnPrimary,
+  .btnGhost {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .statsRow {
+    gap: 1.2rem;
+    padding: 1.5rem 1rem 2.2rem;
+  }
+
+  .categories {
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  .sectionTitle {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .cardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    padding: 1.4rem;
+  }
+
+  .ctaSection {
+    padding: 2.5rem 1rem 4.5rem;
+  }
+
+  .ctaGlow {
+    width: 280px;
+    height: 280px;
+    bottom: -60px;
+  }
+
+  .ctaTitle {
+    font-size: 1.6rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .heroTag {
+    font-size: 0.72rem;
+    padding: 0.3rem 0.9rem;
+  }
+
+  .statValue {
+    font-size: 1.6rem;
+  }
+
+  .cardEmoji {
+    font-size: 2rem;
+  }
+}

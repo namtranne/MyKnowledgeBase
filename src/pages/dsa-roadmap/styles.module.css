@@ -819,6 +819,21 @@
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
+  .hero {
+    padding-top: 2rem;
+  }
+
+  .tabBar {
+    width: 100%;
+    justify-content: stretch;
+    gap: 0.35rem;
+  }
+
+  .tabBtn {
+    flex: 1 1 0;
+    padding: 0.5rem 0.75rem;
+  }
+
   .dashboard {
     grid-template-columns: 1fr;
     justify-items: center;
@@ -856,6 +871,16 @@
 
   .countdown {
     padding: 1.2rem 1rem;
+  }
+
+  .phaseHeader,
+  .weekHeader {
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
+  }
+
+  .weekContent {
+    padding: 0 0.9rem 0.9rem;
   }
 }
 

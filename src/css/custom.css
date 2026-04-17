@@ -522,4 +522,27 @@ div[class*="codeBlockTitle"] {
   .theme-doc-markdown h2 {
     font-size: 1.3rem;
   }
+
+  .theme-doc-markdown {
+    padding: 0.3rem 0.2rem;
+  }
+
+  .theme-doc-markdown table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .pagination-nav {
+    gap: 0.6rem;
+  }
+
+  .pagination-nav__link {
+    min-width: 0;
+    padding: 0.8rem;
+  }
+
+  .navbar {
+    padding: 0.55rem 0.85rem;
+  }
 }
