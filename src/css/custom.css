@@ -247,6 +247,22 @@ div[class*="colorModeToggle"],
   color: var(--text-muted);
 }
 
+/* ── Mobile sidebars (navbar + docs) ── */
+.navbar-sidebar {
+  background: var(--surface-1) !important;
+  z-index: 220;
+}
+
+.navbar-sidebar__backdrop {
+  z-index: 210;
+  background: rgba(2, 6, 23, 0.65);
+  backdrop-filter: blur(3px);
+}
+
+.theme-doc-sidebar-container {
+  z-index: 205;
+}
+
 /* ═══════════════════════════════════════
    Doc content
    ═══════════════════════════════════════ */
@@ -544,5 +560,15 @@ div[class*="codeBlockTitle"] {
 
   .navbar {
     padding: 0.55rem 0.85rem;
+  }
+
+  .theme-doc-sidebar-container {
+    background: var(--surface-1) !important;
+  }
+
+  .theme-doc-sidebar-container--show {
+    transform: translate3d(0, 0, 0) !important;
+    visibility: visible;
+    opacity: 1;
   }
 }
