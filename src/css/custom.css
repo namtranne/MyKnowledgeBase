@@ -572,3 +572,44 @@ div[class*="codeBlockTitle"] {
     opacity: 1;
   }
 }
+
+@media (max-width: 996px) {
+  .navbar-sidebar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: min(86vw, 340px);
+    max-width: 86vw;
+    height: 100dvh;
+    transform: translate3d(-100%, 0, 0);
+    transition: transform 0.22s ease;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .navbar-sidebar--show {
+    transform: translate3d(0, 0, 0) !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  .theme-doc-sidebar-container {
+    position: fixed !important;
+    top: var(--ifm-navbar-height);
+    left: 0;
+    width: min(86vw, 340px);
+    max-width: 86vw;
+    height: calc(100dvh - var(--ifm-navbar-height));
+    transform: translate3d(-100%, 0, 0);
+    transition: transform 0.22s ease;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
+  }
+
+  .theme-doc-sidebar-container.theme-doc-sidebar-container--show {
+    transform: translate3d(0, 0, 0) !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
