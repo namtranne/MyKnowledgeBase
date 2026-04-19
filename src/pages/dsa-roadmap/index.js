@@ -391,6 +391,56 @@ export default function DSARoadmap() {
   const solvedMocks = useMemo(() => activeWeeks.reduce((s, w) => s + w.mocks.filter(m => progress[m.id]).length, 0), [activeWeeks, progress]);
   const pct = totalProblems > 0 ? Math.round((solvedProblems / totalProblems) * 100) : 0;
 
+  const incompleteProblems = useMemo(() => {
+    const out = [];
+    for (const w of activeWeeks) {
+      for (const p of w.problems) {
+        if (!progress[p.id]) {
+          out.push({ ...p, weekNum: w.num, weekTitle: w.title, doc: w.doc });
+        }
+      }
+    }
+    return out;
+  }, [activeWeeks, progress]);
+
+  const [randomPickId, setRandomPickId] = useState(null);
+
+  useEffect(() => {
+    if (incompleteProblems.length === 0) {
+      setRandomPickId(null);
+      return;
+    }
+    setRandomPickId((current) => {
+      if (current && incompleteProblems.some((p) => p.id === current)) {
+        return current;
+      }
+      const idx = Math.floor(Math.random() * incompleteProblems.length);
+      return incompleteProblems[idx].id;
+    });
+  }, [incompleteProblems]);
+
+  const shuffleRandomPick = useCallback(() => {
+    if (incompleteProblems.length === 0) return;
+    setRandomPickId((current) => {
+      const pool =
+        current && incompleteProblems.length > 1
+          ? incompleteProblems.filter((p) => p.id !== current)
+          : incompleteProblems;
+      return pool[Math.floor(Math.random() * pool.length)].id;
+    });
+  }, [incompleteProblems]);
+
+  const randomPickEntry = useMemo(() => {
+    if (!randomPickId) return null;
+    for (const w of activeWeeks) {
+      const p = w.problems.find((x) => x.id === randomPickId);
+      if (p) {
+        return { ...p, weekNum: w.num, weekTitle: w.title, doc: w.doc };
+      }
+    }
+    return null;
+  }, [activeWeeks, randomPickId]);
+
   const weekSolved = useCallback((wn) => {
     const w = activeWeeks.find(x => x.num === wn);
     return w ? w.problems.filter(p => progress[p.id]).length : 0;
@@ -470,6 +520,73 @@ export default function DSARoadmap() {
               <span className={styles.statLabel}>Weeks Complete</span>
             </div>
           </div>
+        </section>
+
+        <section className={styles.randomPick} aria-labelledby="random-pick-heading">
+          <div className={styles.randomPickHeader}>
+            <span className={styles.randomPickIcon} aria-hidden>🎲</span>
+            <h2 id="random-pick-heading" className={styles.randomPickTitle}>
+              Random incomplete problem
+            </h2>
+          </div>
+          <p className={styles.randomPickHint}>
+            Drawn from problems you have not checked off yet for this track. Use shuffle for another pick.
+          </p>
+          {incompleteProblems.length === 0 ? (
+            <p className={styles.randomPickEmpty}>Every problem in this track is marked done. Nice work.</p>
+          ) : randomPickEntry ? (
+            <div className={styles.randomPickBody}>
+              <div className={styles.randomPickMeta}>
+                <span className={styles.randomPickWeek}>Week {randomPickEntry.weekNum}</span>
+                <span className={styles.randomPickWeekTitle}>{randomPickEntry.weekTitle}</span>
+              </div>
+              <div className={styles.randomPickRow}>
+                {randomPickEntry.star && (
+                  <span className={styles.starBadge} title="Must-Do">
+                    ⭐
+                  </span>
+                )}
+                <span className={styles.randomPickName}>{randomPickEntry.name}</span>
+                <span
+                  className={`${styles.diffBadge} ${
+                    randomPickEntry.diff === 'Hard'
+                      ? styles.diffHard
+                      : randomPickEntry.diff === 'Medium'
+                        ? styles.diffMedium
+                        : styles.diffEasy
+                  }`}>
+                  {randomPickEntry.diff}
+                </span>
+              </div>
+              <div className={styles.randomPickActions}>
+                <a
+                  href={randomPickEntry.lc}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.randomPickPrimary}>
+                  Open on LeetCode ↗
+                </a>
+                <Link className={styles.randomPickSecondary} to={randomPickEntry.doc}>
+                  Week notes
+                </Link>
+                <button type="button" className={styles.randomPickShuffle} onClick={shuffleRandomPick}>
+                  Shuffle
+                </button>
+                <label className={styles.randomPickDone}>
+                  <input
+                    type="checkbox"
+                    className={styles.checkbox}
+                    checked={!!progress[randomPickEntry.id]}
+                    onChange={() => toggle(randomPickEntry.id)}
+                  />
+                  <span>Mark done</span>
+                </label>
+              </div>
+              <p className={styles.randomPickCount}>
+                {incompleteProblems.length} left in this track
+              </p>
+            </div>
+          ) : null}
         </section>
 
         <div className={styles.filterBar}>

@@ -348,6 +348,168 @@
   text-align: center;
 }
 
+/* ── Random incomplete pick ── */
+.randomPick {
+  margin: 0 0 2rem;
+  padding: 1.35rem 1.5rem 1.5rem;
+  border-radius: 18px;
+  border: 1px solid #a855f744;
+  background: linear-gradient(145deg, #120a1f55, #0f162988);
+  box-shadow: 0 0 24px #a855f718;
+}
+
+.randomPickHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.35rem;
+}
+
+.randomPickIcon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.randomPickTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #e2e8f0;
+}
+
+.randomPickHint {
+  margin: 0 0 1rem;
+  font-size: 0.82rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.randomPickEmpty {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #34d399;
+  font-weight: 600;
+}
+
+.randomPickBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.randomPickMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.75rem;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.randomPickWeek {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: #a855f7;
+}
+
+.randomPickWeekTitle {
+  color: #cbd5e1;
+}
+
+.randomPickRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.65rem;
+}
+
+.randomPickName {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  flex: 1;
+  min-width: 0;
+}
+
+.randomPickActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.65rem;
+}
+
+.randomPickPrimary {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 1rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: #0a0f1f;
+  background: linear-gradient(120deg, #00f0ff, #a855f7);
+  border: none;
+  transition: filter 0.2s, transform 0.15s;
+}
+
+.randomPickPrimary:hover {
+  filter: brightness(1.08);
+  color: #0a0f1f;
+  text-decoration: none;
+}
+
+.randomPickSecondary {
+  padding: 0.42rem 0.95rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #94a3b8;
+  border: 1px solid #334155;
+  text-decoration: none;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.randomPickSecondary:hover {
+  border-color: #00f0ff66;
+  color: #e2e8f0;
+  text-decoration: none;
+}
+
+.randomPickShuffle {
+  padding: 0.42rem 0.95rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  color: #a855f7;
+  border: 1px solid #a855f766;
+  background: #a855f712;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.randomPickShuffle:hover {
+  background: #a855f722;
+  border-color: #a855f7;
+}
+
+.randomPickDone {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  cursor: pointer;
+  user-select: none;
+}
+
+.randomPickCount {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #475569;
+}
+
 /* ── Filter Bar ── */
 .filterBar {
   display: flex;
