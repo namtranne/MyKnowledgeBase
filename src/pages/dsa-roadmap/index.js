@@ -178,6 +178,40 @@ const WEEKS = [
 
 const DAY_LABELS = { 1: 'Day 1-2: Foundation', 2: 'Day 3-4: Intermediate', 3: 'Day 5-7: Advanced' };
 
+const RANDOM_PICK_STORAGE_PREFIX = 'dsa-random-pick-v1';
+const RANDOM_PICK_TTL_MS = 2 * 60 * 60 * 1000;
+
+function randomPickStorageKey(trackKey) {
+  return `${RANDOM_PICK_STORAGE_PREFIX}:${trackKey}`;
+}
+
+function loadStoredRandomPickId(trackKey) {
+  try {
+    const raw = localStorage.getItem(randomPickStorageKey(trackKey));
+    if (!raw) return null;
+    const { id, until } = JSON.parse(raw);
+    if (typeof id !== 'string' || typeof until !== 'number' || Date.now() > until) return null;
+    return id;
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredRandomPickId(trackKey, id) {
+  try {
+    localStorage.setItem(
+      randomPickStorageKey(trackKey),
+      JSON.stringify({ id, until: Date.now() + RANDOM_PICK_TTL_MS }),
+    );
+  } catch {}
+}
+
+function clearStoredRandomPickId(trackKey) {
+  try {
+    localStorage.removeItem(randomPickStorageKey(trackKey));
+  } catch {}
+}
+
 function loadProgress(key) {
   try {
     return JSON.parse(localStorage.getItem(key) || '{}');
@@ -365,6 +399,7 @@ export default function DSARoadmap() {
     setOpenWeeks({});
     setFilter('all');
     setSearch('');
+    setShowRandomTopic(false);
   }, [track]);
 
   const resetStartDate = useCallback(() => {
@@ -404,31 +439,38 @@ export default function DSARoadmap() {
   }, [activeWeeks, progress]);
 
   const [randomPickId, setRandomPickId] = useState(null);
+  const [showRandomTopic, setShowRandomTopic] = useState(false);
 
   useEffect(() => {
     if (incompleteProblems.length === 0) {
       setRandomPickId(null);
+      clearStoredRandomPickId(track);
       return;
     }
-    setRandomPickId((current) => {
-      if (current && incompleteProblems.some((p) => p.id === current)) {
-        return current;
-      }
-      const idx = Math.floor(Math.random() * incompleteProblems.length);
-      return incompleteProblems[idx].id;
-    });
-  }, [incompleteProblems]);
+    const storedId = loadStoredRandomPickId(track);
+    if (storedId && incompleteProblems.some((p) => p.id === storedId)) {
+      setRandomPickId(storedId);
+      return;
+    }
+    const idx = Math.floor(Math.random() * incompleteProblems.length);
+    const id = incompleteProblems[idx].id;
+    saveStoredRandomPickId(track, id);
+    setRandomPickId(id);
+  }, [incompleteProblems, track]);
 
   const shuffleRandomPick = useCallback(() => {
     if (incompleteProblems.length === 0) return;
+    setShowRandomTopic(false);
     setRandomPickId((current) => {
       const pool =
         current && incompleteProblems.length > 1
           ? incompleteProblems.filter((p) => p.id !== current)
           : incompleteProblems;
-      return pool[Math.floor(Math.random() * pool.length)].id;
+      const id = pool[Math.floor(Math.random() * pool.length)].id;
+      saveStoredRandomPickId(track, id);
+      return id;
     });
-  }, [incompleteProblems]);
+  }, [incompleteProblems, track]);
 
   const randomPickEntry = useMemo(() => {
     if (!randomPickId) return null;
@@ -466,6 +508,27 @@ export default function DSARoadmap() {
     if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   }, [filter, search, progress]);
+
+  const searchTrimmed = search.trim();
+  const searchActive = searchTrimmed.length > 0;
+
+  const matchingProblems = useMemo(() => {
+    if (!searchActive) return [];
+    const q = searchTrimmed.toLowerCase();
+    const out = [];
+    for (const w of activeWeeks) {
+      for (const p of w.problems) {
+        if (!p.name.toLowerCase().includes(q)) continue;
+        if (filter === 'done' && !progress[p.id]) continue;
+        if (filter === 'todo' && progress[p.id]) continue;
+        if (filter === 'medium' && p.diff !== 'Medium') continue;
+        if (filter === 'hard' && p.diff !== 'Hard') continue;
+        if (filter === 'star' && !p.star) continue;
+        out.push({ ...p, weekNum: w.num, weekTitle: w.title, doc: w.doc });
+      }
+    }
+    return out;
+  }, [activeWeeks, searchActive, searchTrimmed, filter, progress]);
 
   const resetAll = () => {
     if (window.confirm(`Reset all ${cfg.label} progress? This cannot be undone.`)) {
@@ -530,16 +593,19 @@ export default function DSARoadmap() {
             </h2>
           </div>
           <p className={styles.randomPickHint}>
-            Drawn from problems you have not checked off yet for this track. Use shuffle for another pick.
+            Drawn from problems you have not checked off yet for this track. The same pick is kept for about 2 hours
+            (including after you close the page). Use shuffle for another pick.
           </p>
           {incompleteProblems.length === 0 ? (
             <p className={styles.randomPickEmpty}>Every problem in this track is marked done. Nice work.</p>
           ) : randomPickEntry ? (
             <div className={styles.randomPickBody}>
-              <div className={styles.randomPickMeta}>
-                <span className={styles.randomPickWeek}>Week {randomPickEntry.weekNum}</span>
-                <span className={styles.randomPickWeekTitle}>{randomPickEntry.weekTitle}</span>
-              </div>
+              {showRandomTopic && (
+                <div className={styles.randomPickMeta}>
+                  <span className={styles.randomPickWeek}>Week {randomPickEntry.weekNum}</span>
+                  <span className={styles.randomPickWeekTitle}>{randomPickEntry.weekTitle}</span>
+                </div>
+              )}
               <div className={styles.randomPickRow}>
                 {randomPickEntry.star && (
                   <span className={styles.starBadge} title="Must-Do">
@@ -566,9 +632,18 @@ export default function DSARoadmap() {
                   className={styles.randomPickPrimary}>
                   Open on LeetCode ↗
                 </a>
-                <Link className={styles.randomPickSecondary} to={randomPickEntry.doc}>
-                  Week notes
-                </Link>
+                {showRandomTopic && (
+                  <Link className={styles.randomPickSecondary} to={randomPickEntry.doc}>
+                    Week notes
+                  </Link>
+                )}
+                <button
+                  type="button"
+                  className={styles.randomPickTopicToggle}
+                  onClick={() => setShowRandomTopic((v) => !v)}
+                  aria-expanded={showRandomTopic}>
+                  {showRandomTopic ? 'Hide topic' : 'Show topic'}
+                </button>
                 <button type="button" className={styles.randomPickShuffle} onClick={shuffleRandomPick}>
                   Shuffle
                 </button>
@@ -598,90 +673,165 @@ export default function DSARoadmap() {
             value={search} onChange={e => setSearch(e.target.value)} />
         </div>
 
-        {activePhases.map(phase => (
-          <div key={phase.id} className={styles.phase}>
-            <div className={styles.phaseHeader}
-              onClick={() => setOpenPhases(p => ({ ...p, [phase.id]: !p[phase.id] }))}>
-              <div className={styles.phaseColor} style={{ background: phase.color }} />
-              <span className={styles.phaseTitle}>{phase.title}</span>
-              <span className={styles.phaseProgress}>{phasePct(phase)}%</span>
-              <span className={`${styles.phaseChevron} ${openPhases[phase.id] ? styles.phaseChevronOpen : ''}`}>&#9654;</span>
-            </div>
-            {openPhases[phase.id] && (
-              <div className={styles.phaseWeeks}>
-                {phase.weeks.map(wn => {
-                  const week = activeWeeks.find(w => w.num === wn);
-                  if (!week) return null;
-                  const ws = weekSolved(wn), wt = weekTotal(wn);
-                  const isOpen = openWeeks[wn];
-                  const days = [1, 2, 3];
-                  return (
-                    <div key={wn} className={styles.weekCard}>
-                      <div className={styles.weekHeader}
-                        onClick={() => setOpenWeeks(p => ({ ...p, [wn]: !p[wn] }))}>
-                        <span className={styles.weekNum}>W{wn}</span>
-                        <span className={styles.weekTitle}>{week.title}</span>
-                        <div className={styles.weekProgressWrap}>
-                          <div className={styles.weekProgressBar}>
-                            <div className={styles.weekProgressFill} style={{ width: `${wt > 0 ? (ws / wt) * 100 : 0}%` }} />
-                          </div>
-                          <div className={styles.weekCount}>{ws}/{wt}</div>
-                        </div>
-                        <span className={`${styles.weekChevron} ${isOpen ? styles.weekChevronOpen : ''}`}>&#9654;</span>
-                      </div>
-                      {isOpen && (
-                        <div className={styles.weekContent}>
-                          <Link className={styles.theoryLink} to={week.doc}>
-                            📖 Study Theory & Concepts
-                          </Link>
-                          {days.map(d => {
-                            const dayProblems = week.problems.filter(p => p.day === d && filterProblem(p));
-                            if (dayProblems.length === 0) return null;
-                            return (
-                              <div key={d} className={styles.dayGroup}>
-                                <div className={styles.dayLabel}>{DAY_LABELS[d]}</div>
-                                {dayProblems.map(p => (
-                                  <div key={p.id} className={`${styles.problemRow} ${p.star ? styles.problemRowStar : ''}`}>
-                                    <input type="checkbox" className={styles.checkbox}
-                                      checked={!!progress[p.id]}
-                                      onChange={() => toggle(p.id)} />
-                                    {p.star && <span className={styles.starBadge} title="Must-Do">⭐</span>}
-                                    <span className={`${styles.problemName} ${progress[p.id] ? styles.problemNameDone : ''}`}>
-                                      {p.name}
-                                    </span>
-                                    <span className={`${styles.diffBadge} ${p.diff === 'Hard' ? styles.diffHard : p.diff === 'Medium' ? styles.diffMedium : styles.diffEasy}`}>
-                                      {p.diff}
-                                    </span>
-                                    <a href={p.lc} target="_blank" rel="noopener noreferrer" className={styles.lcLink}>
-                                      LC ↗
-                                    </a>
-                                  </div>
-                                ))}
-                              </div>
-                            );
-                          })}
-                          <div className={styles.mockSection}>
-                            <div className={styles.mockTitle}>🎤 Mock Interview</div>
-                            {week.mocks.map(m => (
-                              <div key={m.id} className={styles.mockItem}>
-                                <input type="checkbox" className={styles.checkbox}
-                                  checked={!!progress[m.id]}
-                                  onChange={() => toggle(m.id)} />
-                                <span className={`${styles.mockName} ${progress[m.id] ? styles.mockNameDone : ''}`}>
-                                  {m.name}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+        {searchActive ? (
+          <section className={styles.searchResults} aria-labelledby="search-results-heading">
+            <h2 id="search-results-heading" className={styles.searchResultsTitle}>
+              Matching problems
+              <span className={styles.searchResultsCount}>{matchingProblems.length}</span>
+            </h2>
+            {matchingProblems.length === 0 ? (
+              <p className={styles.searchResultsEmpty}>No problems match your search and filters.</p>
+            ) : (
+              <ul className={styles.searchResultsList}>
+                {matchingProblems.map((p) => (
+                  <li key={p.id} className={`${styles.searchResultRow} ${p.star ? styles.problemRowStar : ''}`}>
+                    <div className={styles.searchResultTop}>
+                      <input
+                        type="checkbox"
+                        className={styles.checkbox}
+                        checked={!!progress[p.id]}
+                        onChange={() => toggle(p.id)}
+                      />
+                      {p.star && (
+                        <span className={styles.starBadge} title="Must-Do">
+                          ⭐
+                        </span>
                       )}
+                      <span className={`${styles.problemName} ${progress[p.id] ? styles.problemNameDone : ''}`}>
+                        {p.name}
+                      </span>
+                      <span
+                        className={`${styles.diffBadge} ${
+                          p.diff === 'Hard' ? styles.diffHard : p.diff === 'Medium' ? styles.diffMedium : styles.diffEasy
+                        }`}>
+                        {p.diff}
+                      </span>
+                      <a href={p.lc} target="_blank" rel="noopener noreferrer" className={styles.lcLink}>
+                        LC ↗
+                      </a>
+                      <Link className={styles.searchResultNotes} to={p.doc}>
+                        Notes
+                      </Link>
                     </div>
-                  );
-                })}
-              </div>
+                    <div className={styles.searchResultWeek}>
+                      W{p.weekNum} · {p.weekTitle}
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
-          </div>
-        ))}
+          </section>
+        ) : (
+          activePhases.map((phase) => (
+            <div key={phase.id} className={styles.phase}>
+              <div
+                className={styles.phaseHeader}
+                onClick={() => setOpenPhases((p) => ({ ...p, [phase.id]: !p[phase.id] }))}>
+                <div className={styles.phaseColor} style={{ background: phase.color }} />
+                <span className={styles.phaseTitle}>{phase.title}</span>
+                <span className={styles.phaseProgress}>{phasePct(phase)}%</span>
+                <span className={`${styles.phaseChevron} ${openPhases[phase.id] ? styles.phaseChevronOpen : ''}`}>
+                  &#9654;
+                </span>
+              </div>
+              {openPhases[phase.id] && (
+                <div className={styles.phaseWeeks}>
+                  {phase.weeks.map((wn) => {
+                    const week = activeWeeks.find((w) => w.num === wn);
+                    if (!week) return null;
+                    const ws = weekSolved(wn),
+                      wt = weekTotal(wn);
+                    const isOpen = openWeeks[wn];
+                    const days = [1, 2, 3];
+                    return (
+                      <div key={wn} className={styles.weekCard}>
+                        <div className={styles.weekHeader} onClick={() => setOpenWeeks((p) => ({ ...p, [wn]: !p[wn] }))}>
+                          <span className={styles.weekNum}>W{wn}</span>
+                          <span className={styles.weekTitle}>{week.title}</span>
+                          <div className={styles.weekProgressWrap}>
+                            <div className={styles.weekProgressBar}>
+                              <div
+                                className={styles.weekProgressFill}
+                                style={{ width: `${wt > 0 ? (ws / wt) * 100 : 0}%` }}
+                              />
+                            </div>
+                            <div className={styles.weekCount}>
+                              {ws}/{wt}
+                            </div>
+                          </div>
+                          <span className={`${styles.weekChevron} ${isOpen ? styles.weekChevronOpen : ''}`}>&#9654;</span>
+                        </div>
+                        {isOpen && (
+                          <div className={styles.weekContent}>
+                            <Link className={styles.theoryLink} to={week.doc}>
+                              📖 Study Theory & Concepts
+                            </Link>
+                            {days.map((d) => {
+                              const dayProblems = week.problems.filter((p) => p.day === d && filterProblem(p));
+                              if (dayProblems.length === 0) return null;
+                              return (
+                                <div key={d} className={styles.dayGroup}>
+                                  <div className={styles.dayLabel}>{DAY_LABELS[d]}</div>
+                                  {dayProblems.map((p) => (
+                                    <div key={p.id} className={`${styles.problemRow} ${p.star ? styles.problemRowStar : ''}`}>
+                                      <input
+                                        type="checkbox"
+                                        className={styles.checkbox}
+                                        checked={!!progress[p.id]}
+                                        onChange={() => toggle(p.id)}
+                                      />
+                                      {p.star && (
+                                        <span className={styles.starBadge} title="Must-Do">
+                                          ⭐
+                                        </span>
+                                      )}
+                                      <span className={`${styles.problemName} ${progress[p.id] ? styles.problemNameDone : ''}`}>
+                                        {p.name}
+                                      </span>
+                                      <span
+                                        className={`${styles.diffBadge} ${
+                                          p.diff === 'Hard'
+                                            ? styles.diffHard
+                                            : p.diff === 'Medium'
+                                              ? styles.diffMedium
+                                              : styles.diffEasy
+                                        }`}>
+                                        {p.diff}
+                                      </span>
+                                      <a href={p.lc} target="_blank" rel="noopener noreferrer" className={styles.lcLink}>
+                                        LC ↗
+                                      </a>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            })}
+                            <div className={styles.mockSection}>
+                              <div className={styles.mockTitle}>🎤 Mock Interview</div>
+                              {week.mocks.map((m) => (
+                                <div key={m.id} className={styles.mockItem}>
+                                  <input
+                                    type="checkbox"
+                                    className={styles.checkbox}
+                                    checked={!!progress[m.id]}
+                                    onChange={() => toggle(m.id)}
+                                  />
+                                  <span className={`${styles.mockName} ${progress[m.id] ? styles.mockNameDone : ''}`}>
+                                    {m.name}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ))
+        )}
 
         <div className={styles.actions}>
           <button className={styles.resetBtn} onClick={resetAll}>

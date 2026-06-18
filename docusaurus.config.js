@@ -72,6 +72,11 @@ module.exports = async function createConfigAsync() {
             label: '🏋️ DSA Roadmap',
             position: 'left',
           },
+          {
+            to: '/interview-checklist',
+            label: '🎯 Interview Checklist',
+            position: 'left',
+          },
         ],
       },
       footer: {
