@@ -6,7 +6,35 @@ slug: 03-memory-management
 
 # 🧠 Memory Management
 
-Memory management is one of the most critical OS responsibilities — it determines how programs share limited physical memory, provides isolation between processes, and enables programs larger than physical RAM to run.
+> **Memory is where performance, correctness, and security intersect.** Most production issues — OOM kills, latency spikes, corruption — trace back to how the OS manages memory. This chapter teaches you to reason about memory like an experienced engineer: not just how it works, but when it breaks and how to fix it.
+
+---
+
+## 🤔 The Engineer's Question: Why Is My Server OOM-Killed?
+
+```
+Scenario: Your Java service has a heap limit of 512 MB. You set -Xmx512m.
+You see in dmesg: "Out of memory: Kill process 12345 (java) score 987"
+
+But jstat shows heap usage at 180 MB. Why did the OS kill a process
+using only 180 MB of its 512 MB heap?
+```
+
+**Answer:** Because RSS (Resident Set Size) includes more than heap:
+- Thread stacks: 100 threads × 8 MB stack = 800 MB
+- mmap'd shared libraries: hundreds of MB
+- Direct byte buffers and off-heap memory
+- Code, metadata, kernel allocations
+
+The OS doesn't know about your `-Xmx`. It sees a process using 1+ GB of
+RSS and kills it when the machine is low on memory.
+
+By the end of this chapter you'll be able to:
+- Diagnose OOM kills using `/proc`, `dmesg`, and `free`
+- Distinguish page cache, heap, and stack in RSS
+- Choose between brk/sbrk and mmap for allocation strategy
+- Detect memory leaks using system and language-specific tools
+- Tune Linux memory parameters for production workloads
 
 ---
 
@@ -53,6 +81,8 @@ Memory management is one of the most critical OS responsibilities — it determi
 Memorize the order of magnitude: **registers < L1 < L2 < L3 < RAM < SSD < HDD < Network**. Every level is roughly **10× slower** than the one above it.
 :::
 
+**Engineering takeaway:** When your hot loop becomes cache-cold (e.g., after processing a large array that evicts your working set), performance can drop 10–100×. This is why data locality matters so much.
+
 ---
 
 ## 2. Address Space and Contiguous Allocation
@@ -76,6 +106,16 @@ High Address ┌─────────────────────�
              ├──────────────────────┤
              │       Text (Code)    │  Executable instructions (read-only)
 Low Address  └──────────────────────┘  ← 0x00000000
+```
+
+**Engineering context:** When you run `pmap -x <pid>`, you see this layout in action:
+```
+0000000000400000    940K r-x--  /usr/bin/myapp       ← Text (code)
+0000000000600000      4K r----  /usr/bin/myapp       ← Read-only data
+0000000000601000      4K rw---  /usr/bin/myapp       ← Data
+0000000001a00000   8192K rw---  [heap]              ← Heap
+00007f3d00000000  65536K rw---                      ← mmap'd region
+... stack at top ...
 ```
 
 ### Contiguous Memory Allocation
@@ -112,6 +152,8 @@ After Compaction:
 │ 8 KB │ 16KB │ 8KB  │    12 KB       │  Now 10 KB allocation succeeds!
 └──────┴──────┴──────┴────────────────┘
 ```
+
+**Engineering takeaway:** Fragmentation is why modern OSes use paging instead of contiguous allocation. But fragmentation still shows up in allocators — `malloc`'s free list can fragment, leading to high RSS even when you `free()` most of your memory.
 
 ---
 
@@ -313,7 +355,7 @@ Multi-level page table:
 |--------------|---------|
 | "Scan every entry to find the matching address" | Each level is an **indexed array lookup** — the address bits tell you exactly which entry to read |
 | "One big table" | Multi-level tree; only branches that map real memory are allocated |
-| "Happens on every memory access" | The TLB caches recent translations; walks only happen on TLB misses (&lt;1% of accesses) |
+| "Happens on every memory access" | The TLB caches recent translations; walks only happen on TLB misses (<1% of accesses) |
 | "Software does the walk" | The **MMU hardware** does it automatically; the OS only sets up the tables and handles page faults |
 
 ### TLB — Translation Lookaside Buffer
@@ -416,6 +458,8 @@ Pages are loaded into memory **only when accessed** (not upfront). When a proces
 - **Minor (soft) fault**: page is already in memory (e.g., in page cache) but not mapped. Just update page table.
 - **Major (hard) fault**: page must be read from disk. Very expensive (~1–10 ms).
 :::
+
+**Engineering takeaway:** The major reason databases use huge pages and pin memory: to avoid page faults entirely. A database page fault during a query can add milliseconds of latency.
 
 ---
 
@@ -566,6 +610,13 @@ echo -1000 > /proc/<pid>/oom_score_adj    # Never kill (-1000 to 1000)
 echo 1000 > /proc/<pid>/oom_score_adj
 ```
 
+**Engineering takeaway:** The OOM killer doesn't kill the biggest RSS process. It uses a heuristic score that considers:
+- Virtual memory size (larger = more likely to be killed)
+- `oom_score_adj` (manual override)
+- Whether the process is `init`/`kthreadd` (never killed)
+
+This is why your Java app with `-Xmx512m` may be killed while another process with smaller virtual size survives.
+
 ---
 
 ## 9. Memory-Mapped Files (mmap)
@@ -606,6 +657,8 @@ close(fd);
 - **Shared memory IPC** between processes
 :::
 
+**Engineering takeaway:** `mmap` is the reason `ls`, `cat`, and `grep` can appear to read multi-GB files instantly — the kernel maps them on demand, and only loads pages that are actually accessed. For random access to large files, `mmap` is almost always faster than `read()`/`lseek()`.
+
 ---
 
 ## 10. malloc Internals
@@ -613,7 +666,7 @@ close(fd);
 ### How malloc Works
 
 ```
-Small allocations (&lt;128 KB typically):
+Small allocations (<128 KB typically):
 ┌─────────────────────────────────────────┐
 │ malloc() → glibc allocator → brk()/sbrk()│
 │                                         │
@@ -648,6 +701,8 @@ Large allocations (≥128 KB):
 | **jemalloc** | Low fragmentation, excellent multithreading | Facebook, Redis, Rust |
 | **tcmalloc** | Thread-caching, low lock contention | Google, Go runtime |
 | **mimalloc** | Microsoft, fast for small objects | Academic, benchmarks |
+
+**Engineering takeaway:** Memory allocator choice matters for high-throughput, multi-threaded services. `jemalloc` typically reduces fragmentation by 20–50% vs `ptmalloc2` for multi-threaded workloads. The Go runtime uses `mimalloc`-style strategies. Profile allocator behavior with `jemalloc`'s `malloc_stats_print` or `valgrind --tool=massif`.
 
 ---
 
@@ -691,6 +746,72 @@ gcc -fsanitize=address -g my_program.c -o my_program
 Default stack size is 8 MB on Linux (`ulimit -s`). Deep recursion or large local arrays can overflow it. Solutions: increase stack size, convert recursion to iteration, or allocate large buffers on the heap.
 :::
 
+**Engineering takeaway:** Stack overflow is one of the most common bugs in C/C++ recursion. The fix isn't always "increase the stack" — it's often "this recursion should be iterative." In Java, `-Xss` controls stack size; smaller stacks let you run more threads but risk `StackOverflowError` for deep call chains.
+
+---
+
+## 🛠️ Production Debugging: Memory Issues
+
+### "Server is using too much memory — is it a leak?"
+
+```
+Step 1: Confirm the problem
+  free -h                  # What's actually in use vs cached?
+  cat /proc/meminfo        # Detailed breakdown
+  vmstat 1                 # si/so columns = swapping?
+
+Step 2: Identify the process
+  ps aux --sort=-%mem | head -20   # Top memory consumers
+  top -o %MEM                       # Sort by memory
+
+Step 3: Break down RSS (Resident Set Size)
+  pmap -x <pid>            # Per-mapping memory breakdown
+  cat /proc/<pid>/smaps    # Detailed per-mapping stats
+  cat /proc/<pid>/status | grep -i Vm  # VmRSS, VmSize, VmLib, VmStk
+
+Step 4: Distinguish components
+  VmRSS  = Total resident (what shows in top/ps)
+  VmSize = Virtual size (includes unmapped regions)
+  VmLib  = Shared libraries (counted in every process)
+  VmStk  = Stack (8 MB default × thread count)
+  VmExe  = Code segment
+  VmData = Data + heap
+
+Step 5: Look for the leak
+  - C/C++: valgrind, ASan, LSan
+  - Java: jmap -dump, Eclipse MAT
+  - Go: go tool pprof
+  - General: watch RSS over time — a steady increase is a leak
+
+Step 6: Check page cache
+  echo 3 > /proc/sys/vm/drop_caches   # Temporary drop (not in prod)
+  Large "cached" value in free -h is usually NORMAL.
+  The kernel uses free RAM for file caching.
+```
+
+### "Process got OOM-killed — why?"
+
+```bash
+# 1. Confirm it was OOM
+dmesg | grep -i "oom\|killed process"
+journalctl -k | grep -i "oom"
+
+# 2. Check OOM score and adjustment
+cat /proc/<pid>/oom_score          # Higher = more likely killed
+cat /proc/<pid>/oom_score_adj      # Manual override (-1000 to 1000)
+
+# 3. Check actual usage
+cat /proc/<pid>/status | grep -i vm
+cat /proc/<pid>/smaps_rollup       # Summarized memory
+
+# 4. Check cgroup limits (containers)
+cat /sys/fs/cgroup/memory.max      # Hard limit
+cat /sys/fs/cgroup/memory.current   # Current usage
+
+# 5. Protect a critical process
+echo -1000 > /proc/<pid>/oom_score_adj
+```
+
 ---
 
 ## 🔥 Interview Questions
@@ -722,3 +843,45 @@ Default stack size is 8 MB on Linux (`ulimit -s`). Deep recursion or large local
 | SSD random read latency | ~16 μs |
 | HDD seek latency | ~2-10 ms |
 | malloc threshold for mmap | ~128 KB (glibc default) |
+
+---
+
+## ✅ Knowledge Check
+
+import ChapterChecklist from '@site/src/components/ChapterChecklist';
+
+<ChapterChecklist
+  path="/Technical-Knowledge/Operating-Systems/03-memory-management"
+  title="03 — Memory Management — Self Check"
+  items={[
+    'I can describe virtual memory, page tables, and the TLB',
+    'I can explain demand paging and what a page fault triggers',
+    'I can compare LRU and Clock page replacement and when each applies',
+    'I know what thrashing is and how the OS detects/resolves it',
+    'I can differentiate internal vs external fragmentation',
+    'I can use jmap/pmap/free/vmstat to diagnose memory pressure',
+    'I understand how glibc malloc uses brk vs mmap and arena isolation',
+    'I can explain the OOM killer, oom_score, and how to protect a process',
+  ]}
+/>
+
+---
+
+## ✅ Knowledge Check
+
+import ChapterChecklist from '@site/src/components/ChapterChecklist';
+
+<ChapterChecklist
+  path="/Technical-Knowledge/Operating-Systems/03-memory-management"
+  title="03 — Memory Management — Self Check"
+  items={[
+    'I can describe virtual memory, page tables, and the TLB',
+    'I can explain demand paging and what a page fault triggers',
+    'I can compare LRU and Clock page replacement and when each applies',
+    'I know what thrashing is and how the OS detects/resolves it',
+    'I can differentiate internal vs external fragmentation',
+    'I can use jmap/pmap/free/vmstat to diagnose memory pressure',
+    'I understand how glibc malloc uses brk vs mmap and arena isolation',
+    'I can explain the OOM killer, oom_score, and how to protect a process',
+  ]}
+/>

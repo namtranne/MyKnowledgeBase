@@ -6,7 +6,33 @@ slug: 06-linux-internals
 
 # 🐧 Linux Internals & System Calls
 
-This chapter dives into Linux-specific internals that are frequently tested in senior engineering interviews — from system call mechanics to containers and performance tuning.
+> **The production engineer's toolkit.** Linux internals are not academic trivia — they're what you use every time you open `strace`, tune a container, debug why a deployment failed, or explain to your SRE teammate why the OOM killer keeps targeting your service. This chapter connects theory to the tools you'll actually reach for.
+
+---
+
+## 🤔 The Engineer's Question: What's Happening Inside My Container?
+
+```
+Scenario: You run `kubectl describe pod` and see:
+  Last State:     Terminated
+    Reason:       OOMKilled
+    Exit Code:    137
+
+You set resources.limits.memory=512Mi in the deployment spec.
+The application's heap is set to 256 MB with -Xmx256m.
+
+Q1: Why did the container exceed 512 MB when the Java heap is 256 MB?
+Q2: How do you prove the OOM came from the application vs JVM overhead?
+Q3: How do you prevent this in production going forward?
+```
+
+By the end of this chapter, you'll be able to:
+- Trace a process with `strace` and interpret what it's doing at the syscall level
+- Profile CPU hotspots with `perf` and generate flame graphs
+- Configure cgroups and namespaces (containers) with confidence
+- Write signal handlers and implement graceful shutdown
+- Tune kernel parameters (`sysctl`) for production workloads
+- Debug "my container keeps getting OOM-killed" end-to-end
 
 ---
 
@@ -53,6 +79,8 @@ modprobe overlay                 # Load the overlay filesystem module
 rmmod overlay                    # Remove module
 ```
 :::
+
+**Engineering takeaway:** The monolithic design is why Linux drivers run in kernel space (fast, but a buggy driver can crash the system). This is also why container escape is possible — a kernel vulnerability gives the container full host access.
 
 ---
 
@@ -104,6 +132,8 @@ User Application continues with return value
 - **vDSO** (virtual Dynamic Shared Object): some "syscalls" like `gettimeofday` run entirely in user space via a kernel-mapped shared library
 - **io_uring**: submit batches of I/O operations with a single syscall
 :::
+
+**Engineering takeaway:** A syscall costs ~100–200 ns of pure overhead. For tiny reads/writes, this dominates. Buffered I/O (`fprintf` vs `write`) batches calls, amortizing the cost. `io_uring` takes this further — submit a batch, get a batch of completions.
 
 ---
 
@@ -159,6 +189,8 @@ if (pid == 0) {
 }
 ```
 
+**Engineering takeaway:** `fork` + `exec` is how shells and servers launch processes. `systemd`, Docker, `sshd`, and web servers all use this. Understanding `fork` + `COW` explains why spawning a process is faster than it looks.
+
 ---
 
 ## 4. Process Management in Linux
@@ -186,6 +218,8 @@ cat /proc/version          # Kernel version
 cat /proc/filesystems      # Supported file systems
 ```
 
+**Engineering takeaway:** `/proc` is your #1 tool for introspecting a process without source code. When a vendor says "our Java app is using too much memory," you can answer with `cat /proc/<pid>/smaps_rollup` without needing a Java profiler.
+
 ### Essential Process Management Commands
 
 ```bash
@@ -203,8 +237,10 @@ atop                        # Advanced system & process monitor
 kill -TERM <pid>            # Graceful termination (SIGTERM)
 kill -9 <pid>               # Force kill (SIGKILL, cannot be caught)
 kill -STOP <pid>            # Pause process (SIGSTOP)
-kill -CONT <pid>            # Resume paused process (SIGCONT)
+kill -CONT <pid>            # Resume paused process
 ```
+
+**Engineering takeaway:** `kill -9` is the last resort. Always try `kill -15` (SIGTERM) first — it lets the process clean up resources, flush buffers, and close connections. Docker's stop flow is: SIGTERM → wait → SIGKILL.
 
 ---
 
@@ -275,6 +311,8 @@ int main() {
 
 Docker sends `SIGTERM`, waits 10 seconds (configurable via `stop_grace_period`), then sends `SIGKILL`.
 :::
+
+**Engineering takeaway:** Every production service should handle `SIGTERM` gracefully. Kubernetes will send `SIGTERM` when scaling down or redeploying. If your service doesn't handle it, in-flight requests get dropped, data may be lost, and health checks fail during rolling updates.
 
 ---
 
@@ -393,6 +431,8 @@ Containers are **not VMs** — they're processes with isolated views of the syst
 Containers share the **host kernel** — a kernel exploit in a container can potentially affect the host. VMs run separate kernels with hardware-level isolation (hypervisor). For untrusted workloads, consider **gVisor** (user-space kernel) or **Kata Containers** (lightweight VM per container).
 :::
 
+**Engineering takeaway:** Docker `--privileged` disables almost all isolation — the container essentially has root on the host. Never run untrusted containers with `--privileged`. Use `--cap-add` to grant only the specific capabilities needed.
+
 ---
 
 ## 8. Debugging Tools
@@ -417,6 +457,8 @@ strace -e trace=network ./server    # Network calls only
 strace -e trace=file ./app          # File operations only
 strace -e trace=memory ./app        # Memory operations only
 ```
+
+**Engineering takeaway:** `strace -c` gives you a syscall summary — perfect for answering "why is my app slow?" If you see thousands of `futex` calls, you have lock contention. If you see many `read()` calls on a socket, you might need `sendfile()` or buffering.
 
 ### ltrace — Trace Library Calls
 
@@ -445,6 +487,8 @@ perf top
 # Trace specific events
 perf trace -p <pid>    # Like strace but faster (kernel-level)
 ```
+
+**Engineering takeaway:** `perf record -g` samples stack traces — you get a flame graph showing *which functions* are hot, not just *which syscalls*. This is how you go from "my app is slow" to "my app spends 60% of time in `HashMap.get()` due to a degenerate hash function."
 
 ### Other Useful Tools
 
@@ -529,6 +573,14 @@ sysctl net.core.rmem_max=16777216      # Max socket receive buffer
 sysctl net.core.wmem_max=16777216      # Max socket send buffer
 ```
 
+**Engineering takeaway:** For a high-traffic web server, the essential sysctls are:
+- `net.core.somaxconn` and `tcp_max_syn_backlog` (handle backlog)
+- `tcp_tw_reuse` (recycle TIME_WAIT sockets)
+- `net.ipv4.ip_local_port_range` (avoid running out of ephemeral ports)
+- `fs.file-max` and `ulimit -n` (allow many open files)
+
+---
+
 ### Performance Investigation Checklist
 
 ```
@@ -553,6 +605,77 @@ Problem: System is slow
              └── ss -s → connection counts
                  sar -n DEV 1 → bandwidth per interface
                  tcpdump/wireshark → packet analysis
+```
+
+---
+
+## 🛠️ Production Scenarios
+
+### Scenario 1: "Container is OOM-killed"
+
+```bash
+# 1. Confirm
+dmesg | grep -i "oom\|killed process"
+
+# 2. Find which cgroup/container
+cat /sys/fs/cgroup/.../memory.max      # Limit
+cat /sys/fs/cgroup/.../memory.current   # Actual usage
+
+# 3. Check OOM score
+# Inside the container (if it's still running):
+cat /proc/self/oom_score
+cat /proc/self/oom_score_adj
+
+# 4. Solutions
+# - Increase memory limit
+# - Fix the leak (Java heap dump, Go pprof)
+# - Add swap (prevents OOM, slows things down)
+# - Adjust oom_score_adj to protect critical processes
+```
+
+### Scenario 2: "Service has high CPU but app code looks idle"
+
+```bash
+# 1. Is the process in kernel or user space?
+top -Hp <pid>            # Per-thread CPU
+# If a thread is in sys_ni_syscall or futex → blocking in kernel
+
+# 2. What's it doing at the syscall level?
+strace -p <pid> -f
+# If you see thousands of futex/futex_wait → lock contention
+# If you see epoll_wait returning instantly → likely busy poll
+
+# 3. Profile the code
+perf record -g -p <pid> -- sleep 10
+perf report
+# Look for unexpected hot paths
+
+# 4. Common causes
+# - Lock contention in user code
+# - Busy loop waiting on a condition
+# - Garbage collection (check GC logs)
+# - CPU-bound regex or JSON parsing
+```
+
+### Scenario 3: "File descriptors keep growing"
+
+```bash
+# 1. Count open FDs
+ls /proc/<pid>/fd | wc -l
+lsof -p <pid> | wc -l
+
+# 2. Check limit
+cat /proc/<pid>/limits | grep "open files"
+ulimit -n
+
+# 3. Find the leak
+lsof -p <pid> | grep -v cwd | grep -v txt | grep -v mem
+# Look for patterns: many sockets to the same host, many open files
+
+# 4. Fix
+# - Ensure close() is called in finally blocks
+# - Use try-with-resources (Java) or defer (Go)
+# - Check connection pool configuration
 ```
 
 ---
@@ -609,3 +732,24 @@ Problem: System is slow
 | SIGKILL signal number | 9 |
 | SIGTERM signal number | 15 |
 | Default file descriptor limit | 1024 (soft) |
+
+---
+
+## ✅ Knowledge Check
+
+import ChapterChecklist from '@site/src/components/ChapterChecklist';
+
+<ChapterChecklist
+  path="/Technical-Knowledge/Operating-Systems/06-linux-internals"
+  title="06 — Linux Internals — Self Check"
+  items={[
+    'I understand the fork/exec/wait lifecycle and exit codes',
+    'I know what /proc exposes (pid, fd, mounts, cgroup) and how to use it',
+    'I can read a process state from /proc/<pid>/status and /proc/<pid>/stack',
+    'I understand signals (default, catch, ignore, SIGKILL, SIGSTOP, SIGCHLD)',
+    'I can explain cgroups v1 vs v2 and what cpu.max / memory.max do',
+    'I know all 8 Linux namespaces and when each is used by containers',
+    'I can use strace/ltrace/perf to diagnose OOM, high CPU, and FD leaks',
+    'I understand how Docker and Kubernetes use cgroups + namespaces for isolation',
+  ]}
+/>

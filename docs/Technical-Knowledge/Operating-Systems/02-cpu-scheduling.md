@@ -6,7 +6,28 @@ slug: 02-cpu-scheduling
 
 # 🏗️ CPU Scheduling
 
-The CPU scheduler decides **which process/thread gets the CPU next** and for **how long**. This directly impacts system responsiveness, throughput, and fairness.
+> **The scheduler decides who runs, when, and for how long.** Understanding scheduling is how you explain latency jitter in your service, why a batch job starves your API, and how to tune container CPU limits.
+
+---
+
+## 🤔 The Engineer's Question: Why Did My Service Slow Down?
+
+```
+Scenario: You deploy a service alongside a nightly batch job on the same machine.
+
+Monday: P99 latency = 45ms
+Tuesday (batch runs): P99 latency = 2,300ms
+Wednesday (batch stops): P99 latency = 44ms
+
+The service and batch job run on separate processes. Why did the batch
+job hurt your service's latency?
+```
+
+By the end of this chapter, you'll be able to reason about:
+- Why your Java threads all spend time in `RUNNABLE` state but the service is slow (scheduler overhead)
+- How to prevent a CPU-hungry job from starving latency-sensitive services
+- Why adding `nice -n 10` to the batch job fixes the problem
+- When to use CPU affinity (`taskset`) to isolate workloads
 
 ---
 
@@ -26,6 +47,8 @@ The CPU scheduler decides **which process/thread gets the CPU next** and for **h
 **Response time** = First run time − Arrival time
 :::
 
+**Engineering context:** For batch workloads (log processing, report generation), throughput and turnaround matter most. For user-facing services (web API, UI), response time is what users notice. A scheduler that optimizes throughput may make your interactive app feel sluggish.
+
 ---
 
 ## 2. Preemptive vs Non-Preemptive
@@ -38,6 +61,8 @@ The CPU scheduler decides **which process/thread gets the CPU next** and for **h
 | **Complexity** | Simpler | Complex (needs careful synchronization) |
 | **Real-time suitability** | Poor | Good |
 | **Examples** | FCFS, SJF (non-preemptive) | SRTF, Round Robin, MLFQ, CFS |
+
+**Engineering context:** Non-preemptive schedulers are simple but dangerous — a single buggy process that never does I/O can take down an entire system. All modern general-purpose OSes use preemptive scheduling. However, **cooperative scheduling** is making a comeback in user-space: Go's scheduler, async/await runtimes, and Java's virtual threads all rely on well-behaved coroutines that yield at well-defined points.
 
 ---
 
@@ -73,6 +98,8 @@ Gantt Chart:
 :::warning Convoy Effect
 Short processes stuck behind a long one → high average waiting time. If P2 and P3 ran first, average waiting time drops dramatically.
 :::
+
+**Engineering takeaway:** FCFS is what happens when you naively use a single queue without any preemption — a single long request can hold up all others. This is why thread pools and async I/O exist.
 
 ---
 
@@ -127,6 +154,8 @@ Gantt Chart (SRTF):
 SJF is **provably optimal** for minimizing average waiting time. The problem? You can't know burst times in advance. Real schedulers **estimate** using exponential averaging of past burst times.
 :::
 
+**Engineering takeaway:** SJF is ideal but impossible in practice. However, the *intuition* behind SJF — "run the task that will finish soonest first" — shows up everywhere: shortest-connection-first load balancers, shortest-job-first queues, and even garbage collection (parallel scavenge prioritizes young generation because those collect fastest).
+
 ---
 
 ### 3.3 Priority Scheduling
@@ -150,6 +179,8 @@ Gantt Chart (non-preemptive, all arrive at 0):
 :::warning Starvation
 Low-priority processes may **never run** if higher-priority processes keep arriving. Solution: **Aging** — gradually increase the priority of waiting processes over time.
 :::
+
+**Engineering takeaway:** Linux nice values (`nice -n 10`) implement exactly this. Using `nice` in production is a standard way to ensure batch jobs don't starve interactive services.
 
 ---
 
@@ -200,6 +231,8 @@ Overhead │
                   Quantum Size
 ```
 
+**Engineering takeaway:** Setting time quantum too small causes your server to spend most of its CPU time context switching. In containers, cgroup CPU shares effectively control quantum allocation — a container with 0.5 CPU gets half the quanta.
+
 ---
 
 ### 3.5 Multilevel Queue Scheduling
@@ -221,6 +254,8 @@ Low Priority
 - Fixed-priority preemptive scheduling between queues
 - A batch process only runs when system and interactive queues are empty
 - **Problem:** no mobility between queues → starvation of lower queues
+
+**Engineering takeaway:** This is what happens when you run a CPU-intensive cron job alongside an interactive API. The cron job sits in a low queue, but if the high-priority queues are always non-empty, the batch job may starve.
 
 ---
 
@@ -250,6 +285,8 @@ The most important general-purpose scheduler. Processes can **move between queue
 - **Automatically classifies** processes without needing prior knowledge of burst times
 - Used as the basis for schedulers in Windows, macOS, and FreeBSD
 :::
+
+**Engineering takeaway:** MLFQ's core insight — "processes that yield early are probably interactive, give them preference" — is why interactive apps feel snappy even under load. This is exactly what your OS does, and it's why `top` shows high CPU for batch processes but your web UI stays responsive.
 
 ---
 
@@ -289,6 +326,8 @@ Example with 2 tasks, nice 0 and nice 5:
 :::info CFS Replacement: EEVDF
 Linux 6.6 (2023) replaced CFS with **EEVDF** (Earliest Eligible Virtual Deadline First). It improves latency for interactive tasks by considering virtual deadlines rather than just vruntime. The core idea of fairness remains.
 :::
+
+**Engineering takeaway:** CFS uses `vruntime` — not wall-clock time — to decide who runs next. A low-nice (high-priority) process's vruntime grows slower, so it gets proportionally more CPU. This is why `nice -n -5` makes a process noticeably faster.
 
 ---
 
@@ -340,6 +379,34 @@ taskset -p <pid>                 # Show CPU affinity mask
 taskset -c 0,1 ./my_program     # Pin to CPU 0 and 1
 ```
 
+**Engineering context:** These commands are your primary tools for isolating noisy neighbors in production. If a batch job is affecting your service's latency, `renice` it. If you're benchmarking, `taskset` to pin to a single core to avoid noise from other processes.
+
+---
+
+## 🛠️ Engineering Decision Framework
+
+```
+You need to run multiple workloads on the same machine. How do you
+prevent one from hurting the others?
+
+┌──────────────────────────────────────────────────────────┐
+│  Step 1: Know your workloads                             │
+│  - CPU-bound (batch, encoding) vs I/O-bound (web server) │
+│  - Latency-sensitive (API) vs throughput (analytics)     │
+├──────────────────────────────────────────────────────────┤
+│  Step 2: Apply the right tool                            │
+│  - CPU-bound batch → SCHED_BATCH or `nice`               │
+│  - Latency-sensitive → SCHED_NORMAL, pin to core         │
+│  - Real-time requirements → SCHED_FIFO / SCHED_RR        │
+│  - Strong isolation → cgroups with cpu.max / cpu.weight  │
+├──────────────────────────────────────────────────────────┤
+│  Step 3: Verify with monitoring                           │
+│  - pidstat -p <pid> 1 → per-process CPU %                │
+│  - perf top → where CPU time is spent                    │
+│  - vmstat 1 → system-wide CPU utilization                │
+└──────────────────────────────────────────────────────────┘
+```
+
 ---
 
 ## 🔥 Interview Questions
@@ -368,3 +435,45 @@ taskset -c 0,1 ./my_program     # Pin to CPU 0 and 1
 | SCHED_FIFO priority range | 1–99 (99 = highest) |
 | Nice value range | -20 (high priority) to +19 (low priority) |
 | Default nice value | 0 |
+
+---
+
+## ✅ Knowledge Check
+
+import ChapterChecklist from '@site/src/components/ChapterChecklist';
+
+<ChapterChecklist
+  path="/Technical-Knowledge/Operating-Systems/02-cpu-scheduling"
+  title="02 — CPU Scheduling — Self Check"
+  items={[
+    'I can explain the trade-offs of FCFS, SJF, RR, and Priority scheduling',
+    'I understand what CFS achieves and why vruntime fairness matters',
+    'I can describe the convoy effect and how to avoid it',
+    'I know how starvation happens and how aging fixes it',
+    'I can reason about nice values, SCHED_FIFO vs SCHED_RR, and real-time policies',
+    'I can use pidstat/perf/vmstat to diagnose CPU contention and pick a fix',
+    'I understand CPU-bound vs I/O-bound scheduling behavior and cgroup tuning',
+    'I can explain EEVDF and how Linux scheduler evolved since kernel 6.6',
+  ]}
+/>
+
+---
+
+## ✅ Knowledge Check
+
+import ChapterChecklist from '@site/src/components/ChapterChecklist';
+
+<ChapterChecklist
+  path="/Technical-Knowledge/Operating-Systems/02-cpu-scheduling"
+  title="02 — CPU Scheduling — Self Check"
+  items={[
+    'I can explain the trade-offs of FCFS, SJF, RR, and Priority scheduling',
+    'I understand what CFS achieves and why vruntime fairness matters',
+    'I can describe the convoy effect and how to avoid it',
+    'I know how starvation happens and how aging fixes it',
+    'I can reason about nice values, SCHED_FIFO vs SCHED_RR, and real-time policies',
+    'I can use pidstat/perf/vmstat to diagnose CPU contention and pick a fix',
+    'I understand CPU-bound vs I/O-bound scheduling behavior and cgroup tuning',
+    'I can explain EEVDF and how Linux scheduler evolved since kernel 6.6',
+  ]}
+/>

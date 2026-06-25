@@ -6,13 +6,37 @@ slug: 01-process-thread-management
 
 # ⚡ Processes & Threads
 
+> **The building block of all software execution.** Understanding when to use a process, a thread, or an async coroutine is one of the most common architectural decisions you'll make — and getting it wrong shows up as latency, memory bloat, or mysterious crashes.
+
+---
+
+## 🤔 The Engineer's Question: When Do I Need a New Thread?
+
+Before diving into definitions, let's start with the decision you'll actually face:
+
+```
+Scenario: Your web service needs to handle 10,000 concurrent requests.
+
+Option A: Create 10,000 threads (one per connection)
+Option B: Use an event loop with a thread pool (e.g., Netty, Node.js)
+Option C: Use goroutines / virtual threads (Go, Java 21+)
+Option D: Use multiple processes (e.g., Gunicorn workers)
+
+Which do you choose, and why?
+```
+
+The answer depends on understanding the costs below. By the end of this chapter, you'll be able to answer questions like:
+- Why did adding 200 threads to my Java service make latency *worse*?
+- Why does Chrome use processes for tabs, not threads?
+- Why does my Go service handle 100K goroutines but my Java service chokes at 1,000 threads?
+
 ---
 
 ## 1. Process vs Thread
 
 | Aspect | Process | Thread |
 |--------|---------|--------|
-| **Definition** | Independent program in execution | Lightweight unit of execution within a process |
+| **Definition** | Independent program in execution with its own address space | Lightweight unit of execution within a process |
 | **Memory** | Own address space (code, data, heap, stack) | Shares address space with other threads in the same process |
 | **Creation cost** | Expensive (new address space, page tables) | Cheap (shares most resources with parent process) |
 | **Context switch** | Expensive (TLB flush, page table swap) | Cheaper (shared address space, no TLB flush needed) |
@@ -25,7 +49,9 @@ slug: 01-process-thread-management
 Chrome deliberately uses **multi-process architecture** — each tab is a separate process. This means a crash in one tab doesn't take down the browser. The trade-off is higher memory usage. Firefox historically used threads and later moved toward multi-process (Electrolysis/Fission).
 :::
 
-### Deep Dive: Key Concepts from the Comparison Table
+---
+
+### Deep Dive: Why These Differences Matter
 
 #### Page Table Swap — Why Process Switches Are Expensive
 
@@ -650,6 +676,27 @@ int main() {
 - **Signals** → lightweight notifications (SIGHUP for config reload)
 - **Message queues** → when you need message boundaries and priorities
 :::
+
+---
+
+## ✅ Knowledge Check
+
+import ChapterChecklist from '@site/src/components/ChapterChecklist';
+
+<ChapterChecklist
+  path="/Technical-Knowledge/Operating-Systems/01-process-thread-management"
+  title="01 — Processes & Threads — Self Check"
+  items={[
+    'I can explain when to choose a process vs. thread vs. async coroutine',
+    'I understand why context switches are expensive (TLB flush, page table swap)',
+    'I can describe Copy-on-Write and how fork() uses it',
+    'I know what a zombie/orphan process is and how to handle it',
+    'I can implement IPC using pipes, message queues, and shared memory',
+    'I understand Chrome\'s multi-process architecture trade-offs',
+    'I can reason about thread stack sizing, goroutine stacks, and concurrency limits',
+    'I know the difference between user-level and kernel-level threads (M:N)',
+  ]}
+/>
 
 ---
 

@@ -3,6 +3,8 @@ sidebar_position: 1
 title: "Welcome"
 ---
 
+import TechProgressTracker from '@site/src/components/TechProgressTracker';
+
 # ⚡ Welcome to the Knowledge Base
 
 A comprehensive collection of in-depth technical guides, interview preparation material, and reference resources for **senior software engineers** targeting FAANG and top-tier companies.
@@ -58,6 +60,10 @@ A comprehensive collection of in-depth technical guides, interview preparation m
 | **Designing Data-Intensive Applications** | The bible of distributed systems — storage, replication, partitioning, transactions, consensus | 12 |
 | [**System Design Interview V1**](./Books/System-Design-Interview-V1/) | Alex Xu's framework + 13 real system design problems | 13 |
 | [**Building Microservices**](./Books/Building-Microservices/) | Sam Newman — integration, testing, deployment, scaling microservices | 3 |
+
+<!-- progress-tracker-tech -->
+
+<TechProgressTracker />
 
 ---
 
