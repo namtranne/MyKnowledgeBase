@@ -4,6 +4,7 @@ title: "03 — Memory Management"
 slug: 03-memory-management
 ---
 
+import ChapterChecklist from '@site/src/components/ChapterChecklist';
 
 # 🧠 Memory Management
 
@@ -847,3 +848,19 @@ echo -1000 > /proc/<pid>/oom_score_adj
 
 ---
 
+## ✅ Knowledge Check
+
+<ChapterChecklist
+  path="/Technical-Knowledge/Operating-Systems/03-memory-management"
+  title="03 — Memory Management — Self Check"
+  items={[
+    'I can describe virtual memory, page tables, and the TLB',
+    'I can explain demand paging and what a page fault triggers',
+    'I can compare LRU and Clock page replacement and when each applies',
+    'I know what thrashing is and how the OS detects/resolves it',
+    'I can differentiate internal vs external fragmentation',
+    'I can use jmap/pmap/free/vmstat to diagnose memory pressure',
+    'I understand how glibc malloc uses brk vs mmap and arena isolation',
+    'I can explain the OOM killer, oom_score, and how to protect a process',
+  ]}
+/>

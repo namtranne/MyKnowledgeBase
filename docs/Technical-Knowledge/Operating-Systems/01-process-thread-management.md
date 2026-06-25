@@ -4,6 +4,7 @@ title: "01 — Processes & Threads"
 slug: 01-process-thread-management
 ---
 
+import ChapterChecklist from '@site/src/components/ChapterChecklist';
 
 # ⚡ Processes & Threads
 
@@ -680,3 +681,48 @@ int main() {
 
 ---
 
+## ✅ Knowledge Check
+
+<ChapterChecklist
+  path="/Technical-Knowledge/Operating-Systems/01-process-thread-management"
+  title="01 — Processes & Threads — Self Check"
+  items={[
+    'I can explain when to choose a process vs. thread vs. async coroutine',
+    'I understand why context switches are expensive (TLB flush, page table swap)',
+    'I can describe Copy-on-Write and how fork() uses it',
+    'I know what a zombie/orphan process is and how to handle it',
+    'I can implement IPC using pipes, message queues, and shared memory',
+    'I understand Chrome\'s multi-process architecture trade-offs',
+    'I can reason about thread stack sizing, goroutine stacks, and concurrency limits',
+    'I know the difference between user-level and kernel-level threads (M:N)',
+  ]}
+/>
+
+---
+
+## 🔥 Interview Questions
+
+### Conceptual
+
+1. **What is the difference between a process and a thread?** Explain with examples and trade-offs.
+2. **Why is context switching expensive?** Go beyond the direct cost — discuss cache effects.
+3. **Explain Copy-on-Write in fork(). Why is it important?** What happens without it?
+4. **What is a zombie process? How do you prevent them?** (Answer: call `wait()`/`waitpid()`, or use `SIGCHLD` handler with `SA_NOCLDWAIT`)
+5. **Why might you choose processes over threads?** (Isolation, fault tolerance, security sandboxing)
+
+### Scenario-Based
+
+6. **You call fork() in a multi-threaded program. What happens?** (Only the calling thread is duplicated in the child — other threads vanish. This is why fork + threads is dangerous.)
+7. **A server handles 10K concurrent connections. Would you use threads or processes?** (Neither naively — use event-driven I/O with epoll/kqueue, or goroutines/virtual threads)
+8. **How does Chrome's multi-process architecture improve security?** (Each renderer runs in a sandboxed process — even if compromised, it can't access other tabs' memory)
+
+### Quick Recall
+
+| Question | Answer |
+|----------|--------|
+| Typical thread stack size | 1–8 MB (Linux default: 8 MB) |
+| Goroutine initial stack size | 2–8 KB (growable) |
+| Context switch time | ~1–10 μs (direct), plus cache effects |
+| Max PIDs on Linux | Default 32768, configurable up to 4M (`/proc/sys/kernel/pid_max`) |
+| fork() return value in child | 0 |
+| fork() return value in parent | Child's PID |

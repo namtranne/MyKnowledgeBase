@@ -4,6 +4,7 @@ title: "06 — Linux Internals & System Calls"
 slug: 06-linux-internals
 ---
 
+import ChapterChecklist from '@site/src/components/ChapterChecklist';
 
 # 🐧 Linux Internals & System Calls
 
@@ -736,3 +737,19 @@ lsof -p <pid> | grep -v cwd | grep -v txt | grep -v mem
 
 ---
 
+## ✅ Knowledge Check
+
+<ChapterChecklist
+  path="/Technical-Knowledge/Operating-Systems/06-linux-internals"
+  title="06 — Linux Internals — Self Check"
+  items={[
+    'I understand the fork/exec/wait lifecycle and exit codes',
+    'I know what /proc exposes (pid, fd, mounts, cgroup) and how to use it',
+    'I can read a process state from /proc/<pid>/status and /proc/<pid>/stack',
+    'I understand signals (default, catch, ignore, SIGKILL, SIGSTOP, SIGCHLD)',
+    'I can explain cgroups v1 vs v2 and what cpu.max / memory.max do',
+    'I know all 8 Linux namespaces and when each is used by containers',
+    'I can use strace/ltrace/perf to diagnose OOM, high CPU, and FD leaks',
+    'I understand how Docker and Kubernetes use cgroups + namespaces for isolation',
+  ]}
+/>
