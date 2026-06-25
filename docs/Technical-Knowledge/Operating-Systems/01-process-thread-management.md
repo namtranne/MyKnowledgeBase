@@ -4,6 +4,8 @@ title: "01 — Processes & Threads"
 slug: 01-process-thread-management
 ---
 
+import ChapterChecklist from '@site/src/components/ChapterChecklist';
+
 # ⚡ Processes & Threads
 
 > **The building block of all software execution.** Understanding when to use a process, a thread, or an async coroutine is one of the most common architectural decisions you'll make — and getting it wrong shows up as latency, memory bloat, or mysterious crashes.
@@ -680,8 +682,6 @@ int main() {
 ---
 
 ## ✅ Knowledge Check
-
-import ChapterChecklist from '@site/src/components/ChapterChecklist';
 
 <ChapterChecklist
   path="/Technical-Knowledge/Operating-Systems/01-process-thread-management"

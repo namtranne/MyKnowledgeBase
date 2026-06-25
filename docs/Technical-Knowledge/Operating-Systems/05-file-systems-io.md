@@ -4,6 +4,8 @@ title: "05 — File Systems & I/O"
 slug: 05-file-systems-io
 ---
 
+import ChapterChecklist from '@site/src/components/ChapterChecklist';
+
 # 📁 File Systems & I/O
 
 > **The OS's interface with persistent storage.** Understanding file systems and I/O is what separates engineers who can tune database performance from those who can't. This matters whether you're designing a log storage system, optimizing an analytics pipeline, or debugging "why is my DB slow?"
@@ -513,7 +515,7 @@ for (int i = 0; i < nev; i++) {
 | **Trigger mode** | Level-triggered | Level-triggered | Level or edge-triggered | Level or edge-triggered |
 | **FD set copy** | Copies entire set to/from kernel | Copies entire set | No copy (kernel maintains) | No copy |
 | **Portability** | POSIX (all Unix) | POSIX (all Unix) | Linux only | BSD / macOS |
-| **Best for** | <100 FDs, portable code | <1000 FDs | 10K–1M connections (Linux) | 10K+ connections (macOS/BSD) |
+| **Best for** | &lt;100 FDs, portable code | &lt;1000 FDs | 10K–1M connections (Linux) | 10K+ connections (macOS/BSD) |
 
 :::tip Edge vs Level Triggered
 - **Level-triggered** (default): epoll_wait returns as long as the FD is ready. Safe and simple.
@@ -639,8 +641,6 @@ Common causes:
 ---
 
 ## ✅ Knowledge Check
-
-import ChapterChecklist from '@site/src/components/ChapterChecklist';
 
 <ChapterChecklist
   path="/Technical-Knowledge/Operating-Systems/05-file-systems-io"

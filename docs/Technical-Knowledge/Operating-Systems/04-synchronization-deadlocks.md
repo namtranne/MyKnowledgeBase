@@ -4,6 +4,8 @@ title: "04 — Synchronization & Deadlocks"
 slug: 04-synchronization-deadlocks
 ---
 
+import ChapterChecklist from '@site/src/components/ChapterChecklist';
+
 # 🔒 Synchronization & Deadlocks
 
 > **Concurrency is where the rubber meets the road.** Every concurrent system — from a web server to a database to a distributed cache — relies on correct synchronization. Getting it wrong causes silent data corruption, mysterious deadlocks, and production incidents that only show up under load. This chapter teaches you not just the primitives, but how to choose, combine, and debug them.
@@ -319,7 +321,7 @@ pthread_rwlock_unlock(&rwlock);
 |--------|----------|-------|
 | **Blocking** | Busy-waits (burns CPU cycles) | Sleeps (context switch to kernel) |
 | **CPU usage while waiting** | 100% | 0% (sleeping) |
-| **Best for** | Very short critical sections (<1 μs) | Longer critical sections |
+| **Best for** | Very short critical sections (&lt;1 μs) | Longer critical sections |
 | **Context switch** | None | Yes (sleep/wake) |
 | **Can be used in interrupt context?** | Yes | No (can't sleep in interrupts) |
 | **Typical use** | Kernel, lock-free data structures | Application-level synchronization |
@@ -787,8 +789,6 @@ jcmd <pid> JFR.start duration=30s     # Record 30s of JFR
 ---
 
 ## ✅ Knowledge Check
-
-import ChapterChecklist from '@site/src/components/ChapterChecklist';
 
 <ChapterChecklist
   path="/Technical-Knowledge/Operating-Systems/04-synchronization-deadlocks"

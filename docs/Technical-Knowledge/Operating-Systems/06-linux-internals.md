@@ -4,6 +4,8 @@ title: "06 — Linux Internals & System Calls"
 slug: 06-linux-internals
 ---
 
+import ChapterChecklist from '@site/src/components/ChapterChecklist';
+
 # 🐧 Linux Internals & System Calls
 
 > **The production engineer's toolkit.** Linux internals are not academic trivia — they're what you use every time you open `strace`, tune a container, debug why a deployment failed, or explain to your SRE teammate why the OOM killer keeps targeting your service. This chapter connects theory to the tools you'll actually reach for.
@@ -736,8 +738,6 @@ lsof -p <pid> | grep -v cwd | grep -v txt | grep -v mem
 ---
 
 ## ✅ Knowledge Check
-
-import ChapterChecklist from '@site/src/components/ChapterChecklist';
 
 <ChapterChecklist
   path="/Technical-Knowledge/Operating-Systems/06-linux-internals"

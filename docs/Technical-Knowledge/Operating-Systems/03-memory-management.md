@@ -4,6 +4,8 @@ title: "03 — Memory Management"
 slug: 03-memory-management
 ---
 
+import ChapterChecklist from '@site/src/components/ChapterChecklist';
+
 # 🧠 Memory Management
 
 > **Memory is where performance, correctness, and security intersect.** Most production issues — OOM kills, latency spikes, corruption — trace back to how the OS manages memory. This chapter teaches you to reason about memory like an experienced engineer: not just how it works, but when it breaks and how to fix it.
@@ -355,7 +357,7 @@ Multi-level page table:
 |--------------|---------|
 | "Scan every entry to find the matching address" | Each level is an **indexed array lookup** — the address bits tell you exactly which entry to read |
 | "One big table" | Multi-level tree; only branches that map real memory are allocated |
-| "Happens on every memory access" | The TLB caches recent translations; walks only happen on TLB misses (<1% of accesses) |
+| "Happens on every memory access" | The TLB caches recent translations; walks only happen on TLB misses (under 1% of accesses) |
 | "Software does the walk" | The **MMU hardware** does it automatically; the OS only sets up the tables and handles page faults |
 
 ### TLB — Translation Lookaside Buffer
@@ -847,29 +849,6 @@ echo -1000 > /proc/<pid>/oom_score_adj
 ---
 
 ## ✅ Knowledge Check
-
-import ChapterChecklist from '@site/src/components/ChapterChecklist';
-
-<ChapterChecklist
-  path="/Technical-Knowledge/Operating-Systems/03-memory-management"
-  title="03 — Memory Management — Self Check"
-  items={[
-    'I can describe virtual memory, page tables, and the TLB',
-    'I can explain demand paging and what a page fault triggers',
-    'I can compare LRU and Clock page replacement and when each applies',
-    'I know what thrashing is and how the OS detects/resolves it',
-    'I can differentiate internal vs external fragmentation',
-    'I can use jmap/pmap/free/vmstat to diagnose memory pressure',
-    'I understand how glibc malloc uses brk vs mmap and arena isolation',
-    'I can explain the OOM killer, oom_score, and how to protect a process',
-  ]}
-/>
-
----
-
-## ✅ Knowledge Check
-
-import ChapterChecklist from '@site/src/components/ChapterChecklist';
 
 <ChapterChecklist
   path="/Technical-Knowledge/Operating-Systems/03-memory-management"
