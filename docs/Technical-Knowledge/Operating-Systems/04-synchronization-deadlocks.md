@@ -4,7 +4,6 @@ title: "04 — Synchronization & Deadlocks"
 slug: 04-synchronization-deadlocks
 ---
 
-import ChapterChecklist from '@site/src/components/ChapterChecklist';
 
 # 🔒 Synchronization & Deadlocks
 
@@ -788,19 +787,3 @@ jcmd <pid> JFR.start duration=30s     # Record 30s of JFR
 
 ---
 
-## ✅ Knowledge Check
-
-<ChapterChecklist
-  path="/Technical-Knowledge/Operating-Systems/04-synchronization-deadlocks"
-  title="04 — Synchronization & Deadlocks — Self Check"
-  items={[
-    'I can describe a race condition with a concrete production example',
-    'I know the difference between mutex and semaphore and when to use each',
-    'I can list and explain all four Coffman conditions for deadlock',
-    'I can break each Coffman condition to prevent deadlock',
-    'I can use jstack/gdb/jcmd to find deadlocks in production',
-    'I understand CAS, ABA problem, and hazard pointers',
-    'I can implement a thread-safe LRU cache with read-write locks',
-    'I can explain the difference between lock-based and lock-free concurrency',
-  ]}
-/>

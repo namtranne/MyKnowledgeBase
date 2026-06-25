@@ -4,7 +4,6 @@ title: "05 — File Systems & I/O"
 slug: 05-file-systems-io
 ---
 
-import ChapterChecklist from '@site/src/components/ChapterChecklist';
 
 # 📁 File Systems & I/O
 
@@ -640,19 +639,3 @@ Common causes:
 
 ---
 
-## ✅ Knowledge Check
-
-<ChapterChecklist
-  path="/Technical-Knowledge/Operating-Systems/05-file-systems-io"
-  title="05 — File Systems & I/O — Self Check"
-  items={[
-    'I can compare ext4, XFS, Btrfs, ZFS, NTFS, APFS and pick the right one',
-    'I understand inodes, indirect blocks, and how hard links work',
-    'I can explain the performance characteristics of RAID 0/1/5/10',
-    'I know when to use SSD vs HDD and why seek time matters for databases',
-    'I can compare blocking, non-blocking, async, and multiplexed I/O',
-    'I can implement epoll/kqueue/select and know their limitations',
-    'I understand zero-copy I/O via sendfile() and when Kafka uses it',
-    'I can use iostat/iotop/ss to diagnose storage bottlenecks',
-  ]}
-/>

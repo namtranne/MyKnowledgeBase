@@ -4,7 +4,6 @@ title: "02 — CPU Scheduling"
 slug: 02-cpu-scheduling
 ---
 
-import ChapterChecklist from '@site/src/components/ChapterChecklist';
 
 # 🏗️ CPU Scheduling
 
@@ -439,21 +438,4 @@ prevent one from hurting the others?
 | Default nice value | 0 |
 
 ---
-
-## ✅ Knowledge Check
-
-<ChapterChecklist
-  path="/Technical-Knowledge/Operating-Systems/02-cpu-scheduling"
-  title="02 — CPU Scheduling — Self Check"
-  items={[
-    'I can explain the trade-offs of FCFS, SJF, RR, and Priority scheduling',
-    'I understand what CFS achieves and why vruntime fairness matters',
-    'I can describe the convoy effect and how to avoid it',
-    'I know how starvation happens and how aging fixes it',
-    'I can reason about nice values, SCHED_FIFO vs SCHED_RR, and real-time policies',
-    'I can use pidstat/perf/vmstat to diagnose CPU contention and pick a fix',
-    'I understand CPU-bound vs I/O-bound scheduling behavior and cgroup tuning',
-    'I can explain EEVDF and how Linux scheduler evolved since kernel 6.6',
-  ]}
-/>
 
