@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styles from './styles.module.css';
 
 const STORAGE_KEY = 'chapter-progress-v1';
@@ -36,40 +36,18 @@ function getChapterTitle() {
   return title.replace(/[-|].*$/, '').trim();
 }
 
-function getItemsForTitle(chapterItems, title) {
-  if (!chapterItems || typeof chapterItems !== 'object') return DEFAULT_ITEMS;
-  if (chapterItems[title] && Array.isArray(chapterItems[title])) return chapterItems[title];
-  const stripped = title.replace(/^\d+\s*[—\-]\s*/, '').trim();
-  for (const key of Object.keys(chapterItems)) {
-    const keyStripped = key.replace(/^\d+\s*[—\-]\s*/, '').trim();
-    if (key.includes(stripped) || stripped.includes(keyStripped) || keyStripped.includes(stripped)) {
-      return chapterItems[key];
-    }
-  }
-  return DEFAULT_ITEMS;
-}
-
 export default function ChapterProgress({ chapterItems }) {
   const [progress, setProgress] = useState({});
   const [hydrated, setHydrated] = useState(false);
   const [title, setTitle] = useState('');
-  const [items, setItems] = useState(DEFAULT_ITEMS);
-
-  // Refs so callbacks never close over stale values
-  const titleRef = useRef('');
-  const itemsRef = useRef(DEFAULT_ITEMS);
 
   useEffect(() => {
     setProgress(loadProgress());
     setHydrated(true);
-    const t = getChapterTitle();
-    titleRef.current = t;
-    setTitle(t);
-    const foundItems = getItemsForTitle(chapterItems, t);
-    itemsRef.current = foundItems;
-    setItems(foundItems);
+    setTitle(getChapterTitle());
   }, []);
 
+  const items = chapterItems || DEFAULT_ITEMS;
   const chapterId = getChapterId(title);
   const checked = progress[chapterId] || [];
   const done = checked.filter(Boolean).length;
@@ -79,7 +57,7 @@ export default function ChapterProgress({ chapterItems }) {
   const color = pct === 100 ? '#22c55e' : pct >= 50 ? '#a855f7' : '#00f0ff';
 
   const handleToggle = useCallback((idx) => {
-    const id = getChapterId(titleRef.current);
+    const id = chapterId;
     saveProgress(prev => {
       const current = prev[id] || [];
       const next = [...current];
@@ -92,16 +70,15 @@ export default function ChapterProgress({ chapterItems }) {
       next[idx] = !next[idx];
       return { ...prev, [id]: next };
     });
-  }, []);
+  }, [chapterId]);
 
   const handleToggleAll = useCallback(() => {
-    const id = getChapterId(titleRef.current);
-    const current = progress[id] || [];
-    const allDone = current.length > 0 && current.every(Boolean);
-    const next = Array.from({ length: itemsRef.current.length }, () => !allDone);
+    const id = chapterId;
+    const nextVal = !allDone;
+    const next = Array.from({ length: total }, () => nextVal);
     saveProgress(prev => ({ ...prev, [id]: next }));
     setProgress(prev => ({ ...prev, [id]: next }));
-  }, []);
+  }, [allDone, chapterId, total]);
 
   if (!hydrated) {
     return null;
