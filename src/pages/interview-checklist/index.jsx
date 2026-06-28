@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import Layout from '@theme/Layout';
+import Layout from '../../compat/Layout.jsx';
 import styles from './styles.module.css';
 import { CATEGORIES, TOPICS_DATA } from './_topics-data';
 

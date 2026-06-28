@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import Layout from '@theme/Layout';
-import Link from '@docusaurus/Link';
+import Layout from '../../compat/Layout.jsx';
+import Link from '../../compat/Link.jsx';
 import styles from './styles.module.css';
 import { FOUNDATIONS_PHASES, FOUNDATIONS_WEEKS } from './_foundations-data';
 

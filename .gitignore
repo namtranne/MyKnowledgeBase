@@ -1,12 +1,14 @@
 # dependencies
 node_modules/
 
-# generated output
+# build output
+dist/
 build/
 .docusaurus/
 
 # local cache
 .npm-cache/
+.vite/
 
 # system files
 .DS_Store

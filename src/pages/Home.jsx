@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import Layout from '@theme/Layout';
-import Link from '@docusaurus/Link';
+import Layout from '../compat/Layout.jsx';
+import Link from '../compat/Link.jsx';
 import styles from './index.module.css';
 
 /* ── Particle canvas background ── */

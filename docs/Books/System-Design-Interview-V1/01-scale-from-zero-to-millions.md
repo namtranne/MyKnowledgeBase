@@ -8,18 +8,9 @@
 
 Everything runs on one machine — web server, database, cache, application logic:
 
-```
-   User (Browser / Mobile)
-          │
-          ▼
-   ┌──────────────┐
-   │  Single Box  │
-   │              │
-   │  Web Server  │
-   │  App Logic   │
-   │  Database    │
-   │  Cache       │
-   └──────────────┘
+```mermaid
+flowchart TD
+    U["User<br/>(Browser / Mobile)"] --> Box["Single Box<br/>Web Server · App Logic<br/>Database · Cache"]
 ```
 
 - DNS resolves `api.mysite.com` → the server's public IP
@@ -32,14 +23,10 @@ Everything runs on one machine — web server, database, cache, application logi
 
 The first scaling move: decouple the database from the application server so each can be scaled independently.
 
-```
-   Users
-     │
-     ▼
-┌──────────┐         ┌──────────┐
-│  Web     │────────▶│ Database │
-│  Server  │         │  Server  │
-└──────────┘         └──────────┘
+```mermaid
+flowchart LR
+    U["Users"] --> Web["Web Server"]
+    Web -->|reads / writes| DB["Database Server"]
 ```
 
 ### Which Database?
