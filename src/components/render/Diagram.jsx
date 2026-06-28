@@ -1,10 +1,15 @@
-// Renders ASCII / box-drawing diagrams as a styled "diagram" card so the
-// text-art looks intentional and legible rather than like a raw code block.
+import AsciiGraph from './AsciiGraph.jsx';
+
+// Renders ASCII / box-drawing diagrams as an animated neon SVG graph — the
+// box layout is preserved exactly (no semantic guessing), boxes become glowing
+// components, connectors glow, and dots flow along the lines.
 export default function Diagram({ code, title = 'Diagram' }) {
   return (
     <figure className="diagram">
       <figcaption className="diagram__head">{title}</figcaption>
-      <pre>{code.replace(/\n$/, '')}</pre>
+      <div className="diagram__canvas">
+        <AsciiGraph code={code} />
+      </div>
     </figure>
   );
 }

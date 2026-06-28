@@ -80,18 +80,13 @@ GET /v1/feed
 
 #### High-Level Diagram Example
 
-```
-  ┌──────────┐     ┌──────────────┐     ┌──────────────┐
-  │  Client  │────▶│  API Gateway │────▶│  Feed Service│
-  │  (App)   │     │  / Load Bal  │     │              │
-  └──────────┘     └──────────────┘     └──────┬───────┘
-                                               │
-                          ┌────────────────────┬┴──────────┐
-                          ▼                    ▼           ▼
-                   ┌──────────┐         ┌──────────┐ ┌────────┐
-                   │  Post    │         │  User    │ │ Cache  │
-                   │  Service │         │  Graph   │ │(Redis) │
-                   └──────────┘         └──────────┘ └────────┘
+```mermaid
+flowchart TD
+    C["Client (App)"] --> G["API Gateway / Load Balancer"]
+    G --> F["Feed Service"]
+    F --> P["Post Service"]
+    F --> U["User Graph"]
+    F --> R["Cache (Redis)"]
 ```
 
 #### Tips for This Step

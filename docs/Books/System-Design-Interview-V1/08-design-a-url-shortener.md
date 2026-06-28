@@ -59,16 +59,16 @@ DELETE /api/v1/{shortUrl}
 
 ### Approach 1: Hash + Collision Detection
 
+```mermaid
+flowchart TD
+    A["Long URL"] --> B["hash function"]
+    B --> C["take first 7 characters"]
+    C --> D{"Exists in DB?"}
+    D -->|No| E["store mapping"]
+    D -->|Yes| F["append char / rehash / try next 7"]
 ```
-  Long URL → hash function → take first 7 characters → check for collision
-  
-  hash("https://example.com/path") → "5d41402abc4b2a76b9719d9"
-  Take first 7: "5d41402"
-  
-  Check DB: does "5d41402" exist?
-    No  → store mapping
-    Yes → append character, rehash, or try next 7 chars
-```
+
+Example: `hash("https://example.com/path")` → `5d41402abc4b2a76b9719d9` → take first 7 → `5d41402`.
 
 **Hash functions:**
 
@@ -112,42 +112,36 @@ Convert a unique numeric ID to a compact string using 62 characters: `[0-9, a-z,
 
 ## High-Level Design
 
-```
-  ┌──────────┐     ┌────────────────┐     ┌──────────────────┐
-  │  Client  │────▶│  Load Balancer │────▶│  Web Servers     │
-  └──────────┘     └────────────────┘     │  (Stateless)     │
-                                          └────────┬─────────┘
-                                                   │
-                                    ┌──────────────┼──────────────┐
-                                    ▼              ▼              ▼
-                              ┌──────────┐  ┌──────────┐  ┌──────────┐
-                              │  Cache   │  │ ID Gen   │  │ Database │
-                              │ (Redis)  │  │(Snowflake│  │ (MySQL/  │
-                              │          │  │  /Ticket)│  │  NoSQL)  │
-                              └──────────┘  └──────────┘  └──────────┘
+```mermaid
+flowchart TD
+    C["Client"] --> LB["Load Balancer"]
+    LB --> W["Web Servers<br/>(Stateless)"]
+    W --> Ca["Cache (Redis)"]
+    W --> ID["ID Gen<br/>(Snowflake / Ticket)"]
+    W --> DB["Database<br/>(MySQL / NoSQL)"]
 ```
 
 ### Write Flow (URL Shortening)
 
-```
-  1. Client: POST /api/v1/shorten {"longUrl": "https://example.com/path"}
-  2. Web Server: Check if longUrl already exists in DB
-     ├── Yes → return existing shortUrl
-     └── No  → generate unique ID (Snowflake)
-               → convert ID to Base62 string
-               → store {shortUrl, longUrl, createdAt, expiresAt} in DB
-               → return shortUrl
+```mermaid
+flowchart TD
+    A["Client: POST /shorten {longUrl}"] --> B{"longUrl already in DB?"}
+    B -->|Yes| C["return existing shortUrl"]
+    B -->|No| D["generate unique ID (Snowflake)"]
+    D --> E["convert ID to Base62 string"]
+    E --> F["store {shortUrl, longUrl, createdAt, expiresAt}"]
+    F --> G["return shortUrl"]
 ```
 
 ### Read Flow (Redirect)
 
-```
-  1. Client: GET /tny.im/abc1234
-  2. Web Server: check cache (Redis)
-     ├── Cache HIT  → return 302 redirect to longUrl
-     └── Cache MISS → query DB
-                      ├── Found → store in cache, return 302 redirect
-                      └── Not found → return 404
+```mermaid
+flowchart TD
+    A["Client: GET /tny.im/abc1234"] --> B{"In cache (Redis)?"}
+    B -->|HIT| C["302 redirect to longUrl"]
+    B -->|MISS| D{"Found in DB?"}
+    D -->|Yes| E["store in cache → 302 redirect"]
+    D -->|No| F["return 404"]
 ```
 
 ---
@@ -214,13 +208,11 @@ If the same long URL is shortened multiple times, should it return the same shor
 
 ### Custom Short URLs
 
-```
-  POST /api/v1/shorten
-  { "longUrl": "...", "customAlias": "my-brand" }
-  
-  → Check if "my-brand" is taken
-  → If available, store mapping
-  → If taken, return 409 Conflict
+```mermaid
+flowchart TD
+    A["POST /shorten<br/>{longUrl, customAlias: my-brand}"] --> B{"alias taken?"}
+    B -->|available| C["store mapping"]
+    B -->|taken| D["return 409 Conflict"]
 ```
 
 ### Analytics

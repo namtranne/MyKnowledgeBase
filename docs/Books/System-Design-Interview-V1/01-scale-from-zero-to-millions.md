@@ -61,19 +61,11 @@ flowchart LR
 
 Distribute traffic across multiple web servers:
 
-```
-          Users
-            │
-            ▼
-   ┌────────────────┐
-   │  Load Balancer │  (public IP)
-   └───┬────────┬───┘
-       │        │
-       ▼        ▼
-  ┌────────┐ ┌────────┐
-  │ Web    │ │ Web    │   (private IPs)
-  │ Srv 1  │ │ Srv 2  │
-  └────────┘ └────────┘
+```mermaid
+flowchart TD
+    U["Users"] --> LB["Load Balancer<br/>(public IP)"]
+    LB --> W1["Web Srv 1<br/>(private IP)"]
+    LB --> W2["Web Srv 2<br/>(private IP)"]
 ```
 
 **What the load balancer provides:**
@@ -93,16 +85,15 @@ Distribute traffic across multiple web servers:
 
 A single database is still a single point of failure. Use master-slave (primary-replica) replication:
 
-```
-  Web Servers
-      │
-      ├── Writes ──────▶ [Master DB]
-      │                      │
-      │                 replication
-      │                      │
-      └── Reads ──────▶ [Slave DB 1]
-                        [Slave DB 2]
-                        [Slave DB 3]
+```mermaid
+flowchart LR
+    W["Web Servers"] -->|writes| M["Master DB"]
+    W -->|reads| S1["Slave DB 1"]
+    W -->|reads| S2["Slave DB 2"]
+    W -->|reads| S3["Slave DB 3"]
+    M -. replication .-> S1
+    M -. replication .-> S2
+    M -. replication .-> S3
 ```
 
 | Aspect | Master | Slave (Replica) |
@@ -128,13 +119,13 @@ A cache is a temporary storage layer that is much faster than the database. Cach
 
 ### Cache-Aside (Lazy Loading) Strategy
 
-```
-  1. Web Server receives request
-  2. Check cache for data
-     ├── Cache HIT  → return cached data
-     └── Cache MISS → query database
-                      → store result in cache (with TTL)
-                      → return data
+```mermaid
+flowchart TD
+    R["Web Server receives request"] --> C{"Data in cache?"}
+    C -->|HIT| Ret["Return cached data"]
+    C -->|MISS| DB["Query database"]
+    DB --> Store["Store result in cache (TTL)"]
+    Store --> Ret2["Return data"]
 ```
 
 **Popular caching solutions**: Memcached, Redis
@@ -163,21 +154,12 @@ A cache is a temporary storage layer that is much faster than the database. Cach
 
 A CDN is a geographically distributed network of proxy servers that cache static content (images, CSS, JS, videos) close to users.
 
-```
-  User in Sydney                User in London
-       │                              │
-       ▼                              ▼
-  ┌──────────┐                  ┌──────────┐
-  │ CDN Edge │                  │ CDN Edge │
-  │ Sydney   │                  │ London   │
-  └────┬─────┘                  └────┬─────┘
-       │ (cache miss only)           │
-       └────────────┬────────────────┘
-                    ▼
-              ┌──────────┐
-              │  Origin  │
-              │  Server  │
-              └──────────┘
+```mermaid
+flowchart TD
+    A["User in Sydney"] --> CE1["CDN Edge<br/>Sydney"]
+    B["User in London"] --> CE2["CDN Edge<br/>London"]
+    CE1 -->|cache miss only| O["Origin Server"]
+    CE2 -->|cache miss only| O
 ```
 
 **How it works:**
@@ -205,36 +187,26 @@ To scale the web tier horizontally, servers must be **stateless** — no session
 
 ### The Problem with Stateful Servers
 
+```mermaid
+flowchart LR
+    A["User A"] --> S1["Server 1<br/>has A's session"]
+    B["User B"] --> S2["Server 2<br/>has B's session"]
 ```
-Stateful:
-  User A ──▶ Server 1 (has A's session)
-  User B ──▶ Server 2 (has B's session)
-  
-  If Server 1 dies, User A's session is LOST.
-  If User A is routed to Server 2, session is NOT FOUND.
-```
+
+If Server 1 dies, User A's session is **lost**. If User A is then routed to Server 2, the session is **not found**.
 
 ### The Solution: Externalize State
 
-```
-Stateless:
-  User A ──▶ [Load Balancer] ──▶ Any Server
-  User B ──▶ [Load Balancer] ──▶ Any Server
-  
-  All servers read/write session from shared store:
-  
-  ┌────────┐ ┌────────┐ ┌────────┐
-  │ Srv 1  │ │ Srv 2  │ │ Srv 3  │
-  └───┬────┘ └───┬────┘ └───┬────┘
-      │          │          │
-      └──────────┼──────────┘
-                 ▼
-        ┌────────────────┐
-        │  Shared State  │
-        │  (Redis /      │
-        │   Memcached /  │
-        │   DynamoDB)    │
-        └────────────────┘
+```mermaid
+flowchart TD
+    A["User A"] --> LB["Load Balancer"]
+    B["User B"] --> LB
+    LB --> S1["Srv 1"]
+    LB --> S2["Srv 2"]
+    LB --> S3["Srv 3"]
+    S1 --> SS["Shared State<br/>(Redis / Memcached / DynamoDB)"]
+    S2 --> SS
+    S3 --> SS
 ```
 
 **Benefits of stateless architecture:**
@@ -249,22 +221,12 @@ Stateless:
 
 For global availability and disaster recovery:
 
-```
-                         ┌──────────────┐
-   Users (geo-routed) ──▶│  GeoDNS /    │
-                         │  Global LB   │
-                         └──┬────────┬──┘
-                            │        │
-                    ┌───────┘        └───────┐
-                    ▼                        ▼
-             ┌──────────┐            ┌──────────┐
-             │   DC 1   │            │   DC 2   │
-             │ US-East  │◀──sync───▶│ EU-West  │
-             │          │            │          │
-             │ Web Svrs │            │ Web Svrs │
-             │ Cache    │            │ Cache    │
-             │ Database │            │ Database │
-             └──────────┘            └──────────┘
+```mermaid
+flowchart TD
+    U["Users (geo-routed)"] --> G["GeoDNS / Global LB"]
+    G --> DC1["DC 1 · US-East<br/>Web Svrs · Cache · Database"]
+    G --> DC2["DC 2 · EU-West<br/>Web Svrs · Cache · Database"]
+    DC1 <-->|sync| DC2
 ```
 
 **Key challenges:**
@@ -282,12 +244,10 @@ For global availability and disaster recovery:
 
 Decouple components using asynchronous processing:
 
-```
-  ┌──────────┐     ┌───────────────┐     ┌──────────┐
-  │ Producer │────▶│ Message Queue │────▶│ Consumer │
-  │ (Web Srv)│     │ (Kafka/SQS/   │     │ (Worker) │
-  └──────────┘     │  RabbitMQ)    │     └──────────┘
-                   └───────────────┘
+```mermaid
+flowchart LR
+    P["Producer<br/>(Web Srv)"] --> Q["Message Queue<br/>(Kafka / SQS / RabbitMQ)"]
+    Q --> C["Consumer<br/>(Worker)"]
 ```
 
 **Use cases:**
@@ -302,10 +262,12 @@ Decouple components using asynchronous processing:
 - Smooths out traffic spikes
 
 **Real-world example**: Photo processing pipeline
-```
-Upload Service ──▶ [Queue] ──▶ Thumbnail Worker (x10)
-                            ──▶ Face Detection Worker (x3)
-                            ──▶ Metadata Extraction Worker (x5)
+```mermaid
+flowchart LR
+    U["Upload Service"] --> Q["Queue"]
+    Q --> T["Thumbnail Worker ×10"]
+    Q --> F["Face Detection Worker ×3"]
+    Q --> M["Metadata Extraction Worker ×5"]
 ```
 Each worker type scales independently based on its workload.
 
@@ -324,14 +286,12 @@ Add more CPU, RAM, SSD to the database server.
 
 Split data across multiple databases by a **shard key**:
 
-```
-  user_id % 4 = shard assignment
-
-  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
-  │ Shard 0  │  │ Shard 1  │  │ Shard 2  │  │ Shard 3  │
-  │ IDs: 0,4 │  │ IDs: 1,5 │  │ IDs: 2,6 │  │ IDs: 3,7 │
-  │   8,12…  │  │   9,13…  │  │  10,14…  │  │  11,15…  │
-  └──────────┘  └──────────┘  └──────────┘  └──────────┘
+```mermaid
+flowchart TD
+    K["user_id % 4<br/>shard assignment"] --> S0["Shard 0<br/>IDs 0, 4, 8, 12…"]
+    K --> S1["Shard 1<br/>IDs 1, 5, 9, 13…"]
+    K --> S2["Shard 2<br/>IDs 2, 6, 10, 14…"]
+    K --> S3["Shard 3<br/>IDs 3, 7, 11, 15…"]
 ```
 
 ### Sharding Challenges
@@ -349,50 +309,36 @@ Split data across multiple databases by a **shard key**:
 
 The full architecture at millions of users:
 
-```
-                        ┌──────────┐
-              Users ───▶│  CDN     │ (static assets)
-                │       └──────────┘
-                │
-                ▼
-         ┌──────────────┐
-         │  Load        │
-         │  Balancer    │
-         └──┬───┬───┬───┘
-            │   │   │
-         ┌──┘   │   └──┐
-         ▼      ▼      ▼
-      ┌─────┐┌─────┐┌─────┐    Stateless Web Servers
-      │Srv 1││Srv 2││Srv 3│    (auto-scaled)
-      └──┬──┘└──┬──┘└──┬──┘
-         │      │      │
-         └──────┼──────┘
-                ▼
-    ┌───────────────────────┐
-    │    Shared State       │
-    │  (Redis / Memcached)  │
-    └───────────────────────┘
-                │
-         ┌──────┼──────┐
-         ▼      ▼      ▼
-      ┌─────┐┌─────┐┌─────┐
-      │Cache││Cache││Cache│    Distributed Cache
-      │Node ││Node ││Node │    (Redis Cluster)
-      └─────┘└─────┘└─────┘
-                │
-         ┌──────┼──────┐
-         ▼             ▼
-   ┌──────────┐  ┌──────────┐
-   │  Master  │  │  Slave   │    Database Replication
-   │  (Write) │  │  (Read)  │    (or Sharding at scale)
-   └──────────┘  └──────────┘
-                │
-         ┌──────┼──────┐
-         ▼             ▼
-   ┌──────────┐  ┌──────────┐
-   │  Message │  │  Workers │    Async Processing
-   │  Queue   │──▶│         │
-   └──────────┘  └──────────┘
+```mermaid
+flowchart TD
+    U["Users"] --> CDN["CDN<br/>(static assets)"]
+    U --> LB["Load Balancer"]
+    LB --> S1["Srv 1"]
+    LB --> S2["Srv 2"]
+    LB --> S3["Srv 3"]
+    S1 --> SS["Shared State<br/>(Redis / Memcached)"]
+    S2 --> SS
+    S3 --> SS
+    SS --> C1["Cache Node"]
+    SS --> C2["Cache Node"]
+    SS --> C3["Cache Node"]
+    C1 --> M["Master DB<br/>(Write)"]
+    C2 --> M
+    C3 --> M
+    M --> SL["Slave DB<br/>(Read)"]
+    M --> MQ["Message Queue"]
+    MQ --> WK["Workers<br/>(Async Processing)"]
+
+    subgraph tier1 [" "]
+      S1
+      S2
+      S3
+    end
+    subgraph tier2 [" "]
+      C1
+      C2
+      C3
+    end
 ```
 
 ---

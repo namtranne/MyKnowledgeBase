@@ -241,20 +241,34 @@ a { color: var(--neon-cyan); text-decoration: none; }
   padding: 0.12rem 0.4rem; border-radius: 6px; font-size: 0.86em; font-family: var(--font-mono);
 }
 
-/* ── Tables ── */
-.table-wrap { overflow-x: auto; margin: 1.2rem 0; }
+/* ── Tables (animated neon) ── */
+@keyframes neon-table-header { to { background-position: 200% 0; } }
+.table-wrap { overflow-x: auto; margin: 1.4rem 0; border-radius: 14px; padding: 1.5px;
+  background: conic-gradient(from var(--neon-angle), #00f0ff, #a855f7, #f472b6, #34d399, #00f0ff);
+  animation: neon-border-spin 12s linear infinite, neon-glow-pulse 5s ease-in-out infinite;
+}
 .markdown-body table {
   border-collapse: separate; border-spacing: 0; border-radius: 12px; overflow: hidden;
-  border: 1px solid var(--border); width: 100%; font-size: 0.9rem;
+  border: none; width: 100%; font-size: 0.9rem; background: var(--surface-1);
 }
 .markdown-body th {
-  background: var(--surface-2); color: var(--neon-cyan); font-weight: 700; text-align: left;
+  color: var(--neon-cyan); font-weight: 700; text-align: left;
   text-transform: uppercase; font-size: 0.74rem; letter-spacing: 0.05em;
-  padding: 0.75rem 1rem; border-bottom: 1px solid var(--border);
+  padding: 0.78rem 1rem; border-bottom: 1px solid #00f0ff33;
+  text-shadow: 0 0 10px #00f0ff55;
+  background: linear-gradient(100deg, #131c33 0%, #1c2a4d 35%, #131c33 70%);
+  background-size: 220% 100%;
+  animation: neon-table-header 7s linear infinite;
 }
-.markdown-body td { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+.markdown-body td { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border); color: var(--text-secondary); transition: background 0.18s, box-shadow 0.18s; }
 .markdown-body tr:last-child td { border-bottom: none; }
-.markdown-body tbody tr:hover td { background: #00f0ff06; }
+.markdown-body tbody tr { transition: transform 0.18s; }
+.markdown-body tbody tr:hover td {
+  background: #00f0ff10;
+  box-shadow: inset 0 0 14px #00f0ff10;
+  color: var(--text-primary);
+}
+.markdown-body tbody tr:hover td:first-child { box-shadow: inset 3px 0 0 var(--neon-cyan), inset 0 0 14px #00f0ff10; }
 
 /* ═══════════════ Code blocks ═══════════════ */
 .code-block { margin: 1.3rem 0; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 4px 30px rgba(0,0,0,0.3); background: #0c1322; }
@@ -269,33 +283,133 @@ a { color: var(--neon-cyan); text-decoration: none; }
 .code-block pre { margin: 0; padding: 1rem 1.1rem; overflow-x: auto; font-family: var(--font-mono); font-size: 0.84rem; line-height: 1.6; }
 .code-block code { font-family: var(--font-mono); color: #cdd6f4; background: none; border: none; padding: 0; }
 
-/* ═══════════════ Diagram (converted ASCII art) ═══════════════ */
-.diagram {
-  margin: 1.4rem 0; border-radius: 14px; overflow: hidden;
-  border: 1px solid var(--border-strong);
-  background:
-    radial-gradient(1200px 200px at 0% 0%, #00f0ff08, transparent),
-    radial-gradient(1200px 200px at 100% 100%, #a855f708, transparent),
-    var(--surface-1);
-  box-shadow: 0 6px 36px rgba(0,0,0,0.35);
+/* ═══════════════ Neon animated diagrams & graphs ═══════════════ */
+/* Smoothly animatable angle for the rotating gradient borders. */
+@property --neon-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
 }
+@keyframes neon-border-spin { to { --neon-angle: 360deg; } }
+@keyframes neon-glow-pulse {
+  0%, 100% { box-shadow: 0 0 16px #00f0ff10, 0 6px 36px rgba(0,0,0,0.45); }
+  50%      { box-shadow: 0 0 34px #a855f733, 0 0 10px #00f0ff22, 0 6px 36px rgba(0,0,0,0.45); }
+}
+@keyframes neon-grid-pan { from { background-position: 0 0, 0 0; } to { background-position: 0 26px, 26px 0; } }
+@keyframes neon-sheen { 0% { transform: translateX(-130%) skewX(-18deg); } 55%, 100% { transform: translateX(130%) skewX(-18deg); } }
+@keyframes neon-edge-flow { to { stroke-dashoffset: -28; } }
+@keyframes neon-head-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+/* Shared neon shell for ASCII diagrams, mermaid graphs and charts. */
+.diagram, .mermaid-host {
+  position: relative;
+  margin: 1.6rem 0;
+  border-radius: 16px;
+  border: 1.5px solid transparent;
+  overflow: hidden;
+  background:
+    linear-gradient(var(--surface-1), var(--surface-1)) padding-box,
+    conic-gradient(from var(--neon-angle),
+      #00f0ff, #a855f7, #f472b6, #34d399, #00f0ff) border-box;
+  animation: neon-border-spin 9s linear infinite, neon-glow-pulse 4.5s ease-in-out infinite;
+}
+/* light sweep */
+.diagram::after, .mermaid-host::after {
+  content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background: linear-gradient(110deg, transparent 38%, #ffffff12 46%, #00f0ff1f 50%, #ffffff12 54%, transparent 62%);
+  transform: translateX(-130%) skewX(-18deg);
+  animation: neon-sheen 6s ease-in-out infinite;
+}
+
 .diagram__head {
+  position: relative; z-index: 3;
   display: flex; align-items: center; gap: 0.5rem;
   padding: 0.5rem 0.95rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em;
-  color: var(--neon-cyan); border-bottom: 1px solid var(--border); background: #0d1426;
+  color: var(--neon-cyan); text-shadow: 0 0 10px #00f0ff66;
+  border-bottom: 1px solid #00f0ff22; background: #0c1426cc; backdrop-filter: blur(2px);
 }
-.diagram__head::before { content: '◈'; color: var(--neon-purple); }
+.diagram__head::before { content: '◈'; color: var(--neon-purple); animation: neon-head-blink 2.2s ease-in-out infinite; }
+
 .diagram pre {
-  margin: 0; padding: 1.1rem 1.2rem; overflow-x: auto;
-  font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.35;
-  color: #b9c6e6; white-space: pre;
+  position: relative; z-index: 1;
+  margin: 0; padding: 1.15rem 1.25rem; overflow-x: auto;
+  font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.4;
+  color: #cde9ff; text-shadow: 0 0 6px #00f0ff2e; white-space: pre;
+  background-color: #0a1120;
+  background-image:
+    repeating-linear-gradient(0deg, #00f0ff0d 0 1px, transparent 1px 26px),
+    repeating-linear-gradient(90deg, #a855f70a 0 1px, transparent 1px 26px);
+  animation: neon-grid-pan 7s linear infinite;
 }
 
 /* mermaid host */
-.mermaid-host { margin: 1.4rem 0; padding: 1rem; border-radius: 14px; border: 1px solid var(--border-strong);
-  background: var(--surface-1); box-shadow: 0 6px 36px rgba(0,0,0,0.35); display: flex; justify-content: center; overflow-x: auto; }
-.mermaid-host svg { max-width: 100%; height: auto; }
+.mermaid-host { padding: 1.1rem; display: flex; justify-content: center; }
+.mermaid-host svg { max-width: 100%; height: auto; position: relative; z-index: 1; }
 .mermaid-error { color: var(--neon-amber); font-family: var(--font-mono); font-size: 0.8rem; }
+
+/* mermaid: glowing nodes + flowing neon edges */
+.mermaid-host svg .node rect,
+.mermaid-host svg .node circle,
+.mermaid-host svg .node polygon,
+.mermaid-host svg .node path,
+.mermaid-host svg .cluster rect {
+  filter: drop-shadow(0 0 3px #00f0ff) drop-shadow(0 0 9px #00f0ff66);
+  stroke-width: 1.6px;
+}
+.mermaid-host svg .edgePaths path,
+.mermaid-host svg path.flowchart-link,
+.mermaid-host svg .edge path,
+.mermaid-host svg .relation {
+  stroke-dasharray: 7 6;
+  stroke-width: 1.8px;
+  animation: neon-edge-flow 1.1s linear infinite;
+  filter: drop-shadow(0 0 3px #00f0ff88);
+}
+.mermaid-host svg .nodeLabel { text-shadow: 0 0 6px #00f0ff44; line-height: 1.35; }
+/* edge labels: background matches the canvas so it masks the line invisibly
+   (no dark box), text is neon with a soft glow */
+.mermaid-host svg .edgeLabel,
+.mermaid-host svg .edgeLabel p,
+.mermaid-host svg .edgeLabel div,
+.mermaid-host svg .edgeLabel .label,
+.mermaid-host svg .edgeLabel span {
+  background: #0f1629 !important;
+  background-color: #0f1629 !important;
+  color: #9fd9ff !important;
+  text-shadow: 0 0 6px #00f0ff55;
+}
+.mermaid-host svg .edgeLabel rect { fill: #0f1629 !important; stroke: none !important; opacity: 1 !important; }
+/* let multi-line node labels grow instead of clipping */
+.mermaid-host svg .node foreignObject,
+.mermaid-host svg foreignObject { overflow: visible; }
+.mermaid-host svg .label foreignObject > div { overflow: visible !important; line-height: 1.35; }
+.mermaid-host svg marker path { filter: drop-shadow(0 0 2px #00f0ffaa); }
+
+/* glowing comet dots travelling along the edges */
+.mermaid-host svg .flow-dot {
+  filter: drop-shadow(0 0 4px #ffffff) drop-shadow(0 0 8px currentColor);
+  opacity: 0.95;
+}
+
+/* Respect users who prefer less motion: keep the neon, drop the movement. */
+@media (prefers-reduced-motion: reduce) {
+  .diagram, .mermaid-host,
+  .diagram::after, .mermaid-host::after,
+  .diagram pre, .diagram__head::before,
+  .table-wrap, .markdown-body th,
+  .mermaid-host svg .edgePaths path,
+  .mermaid-host svg path.flowchart-link,
+  .mermaid-host svg .edge path,
+  .mermaid-host svg .relation {
+    animation: none !important;
+  }
+  .diagram, .mermaid-host {
+    border-color: var(--border-strong);
+    background: var(--surface-1);
+  }
+  .table-wrap { background: var(--border-strong); }
+  .markdown-body th { background: var(--surface-2); }
+}
 
 /* ═══════════════ Callout / admonitions ═══════════════ */
 .callout {

@@ -64,12 +64,12 @@ A 128-bit identifier that can be generated independently by each server:
 
 A dedicated database server that issues sequential IDs:
 
-```
-  ┌──────────┐     ┌───────────────┐
-  │ Service A│────▶│ Ticket Server │ → ID: 1001
-  │ Service B│────▶│ (single DB    │ → ID: 1002
-  │ Service C│────▶│  auto-incr)   │ → ID: 1003
-  └──────────┘     └───────────────┘
+```mermaid
+flowchart LR
+    A["Service A"] --> T["Ticket Server<br/>(single DB, auto-increment)"]
+    B["Service B"] --> T
+    C["Service C"] --> T
+    T --> ID["IDs: 1001, 1002, 1003 …"]
 ```
 
 **Flickr's implementation**: Uses MySQL `REPLACE INTO` with auto-increment on a dedicated ticket database. Two ticket servers for HA, each generating odd or even IDs.
@@ -91,14 +91,10 @@ The gold standard for distributed ID generation. A 64-bit ID with embedded times
 
 ### Bit Layout
 
-```
-  ┌───────┬──────────────────────────────────────┬──────────┬──────────────┐
-  │ Sign  │         Timestamp                     │ Machine  │  Sequence    │
-  │ 1 bit │         41 bits                        │ ID       │  Number      │
-  │       │         (milliseconds since epoch)     │ 10 bits  │  12 bits     │
-  └───────┴──────────────────────────────────────┴──────────┴──────────────┘
-    0       Bits 1-41                               Bits 42-51  Bits 52-63
-```
+| Field | Sign | Timestamp | Machine ID | Sequence |
+|-------|------|-----------|------------|----------|
+| **Width** | 1 bit | 41 bits (ms since epoch) | 10 bits | 12 bits |
+| **Bit position** | 0 | 1 – 41 | 42 – 51 | 52 – 63 |
 
 ### Component Breakdown
 
@@ -141,10 +137,11 @@ The gold standard for distributed ID generation. A 64-bit ID with embedded times
 
 Snowflake depends on synchronized clocks across machines. If a machine's clock drifts backward:
 
-```
-  t=100ms: generate ID with timestamp=100
-  Clock drifts back to t=99ms
-  t=99ms:  generate ID with timestamp=99 → OLDER than previous ID!
+```mermaid
+flowchart LR
+    A["t = 100ms<br/>ID timestamp = 100"] --> B["Clock drifts back"]
+    B --> C["t = 99ms<br/>ID timestamp = 99"]
+    C --> D{"⚠ Older than previous ID"}
 ```
 
 **Mitigations:**
@@ -157,9 +154,11 @@ Snowflake depends on synchronized clocks across machines. If a machine's clock d
 
 If 4,096 IDs/ms isn't enough (extremely high throughput):
 
-```
-  t=100ms: seq = 0, 1, 2, ... 4095
-  seq overflows → wait until t=101ms → reset seq = 0
+```mermaid
+flowchart LR
+    A["t = 100ms<br/>seq = 0, 1, 2 … 4095"] --> B{"seq overflow?"}
+    B -->|yes| C["wait until t = 101ms"]
+    C --> D["reset seq = 0"]
 ```
 
 This introduces a tiny delay but prevents ID collision.

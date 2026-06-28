@@ -2,7 +2,9 @@ import { isValidElement, useState } from 'react';
 import Mermaid from './Mermaid.jsx';
 import Diagram from './Diagram.jsx';
 
-const BOX_CHARS = /[┌┐└┘│─├┤┬┴┼╔╗╚╝║═╠╣╦╩╬▶◀▲▼→←↑↓↔⟶⟵]/;
+// True box-drawing characters mark an actual diagram. Bare arrows (→ ▶) alone
+// usually mean prose / API / math examples, so they no longer qualify.
+const BOX_CHARS = /[┌┐└┘│─├┤┬┴┼╔╗╚╝║═╠╣╦╩╬]/;
 
 function nodeToText(node) {
   if (node == null) return '';
