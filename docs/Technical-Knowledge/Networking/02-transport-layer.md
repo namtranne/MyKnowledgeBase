@@ -90,6 +90,10 @@ TCP uses a **three-way handshake** to establish a reliable connection before any
 A two-way handshake cannot handle **duplicate delayed SYN segments**. If an old SYN arrives at the server, it would allocate resources for a connection the client doesn't want. The third ACK confirms the client actually intends to connect.
 :::
 
+:::tip 🔌 Why It Matters in Your SE Role
+This handshake is why **connection pooling and HTTP keep-alive exist** — and why "just open a connection per request" quietly kills performance at scale. Every new TCP connection costs a full round trip *before any data flows*, and over TLS it's 2–3 RTTs. On a 50 ms cross-region path, that's 100–150 ms of pure setup latency tax on every single call. Reusing a pooled, already-established connection skips all of it. This is the concrete reason you configure HikariCP for the database, set `keep-alive` on your HTTP client (OkHttp, Apache HttpClient, gRPC channels), and avoid `new Connection()` in a hot loop. The handshake isn't free, and a pool is how you pay for it once instead of every request.
+:::
+
 ---
 
 ### 👋 Four-Way Termination
@@ -455,6 +459,36 @@ QUIC essentially solves TCP's biggest pain points:
 2. **HOL blocking** — Independent streams
 3. **Connection migration** — Connection IDs survive IP changes
 4. **Ossification** — Built on UDP to avoid middlebox interference
+:::
+
+---
+
+## 🛠️ Applying This in Your SE Role
+
+The transport layer is where "the network is flaky" usually turns out to be "we're using TCP wrong." Connection lifecycle (handshake → ESTABLISHED → TIME_WAIT/CLOSE_WAIT), keepalive, and Nagle are the knobs behind a surprising number of latency and stability incidents.
+
+### Where this shows up in everyday work
+
+| You're doing this… | …and the transport concept behind it is |
+|--------------------|-------------------------------------------|
+| Tuning a DB/HTTP connection pool | Amortizing the 3-way handshake (+ TLS) over many requests |
+| Debugging "Cannot assign requested address" under load | **Ephemeral port / TIME_WAIT exhaustion** from connection churn |
+| A `CLOSE_WAIT` pileup crashing the service | App not calling `close()` on sockets — a resource leak |
+| "Connections reset after a few minutes idle" | LB/NAT **idle timeout** shorter than your keepalive |
+| Slow small-message RPC / chatty protocol | **Nagle's algorithm** vs `TCP_NODELAY` |
+| Choosing HTTP/3 for a mobile app | QUIC: 0-RTT resume, no HOL blocking, connection migration across Wi-Fi↔cellular |
+
+### What to actually do
+
+- **Pool and reuse connections by default.** A pool turns the handshake from a per-request cost into a one-time cost. Size it deliberately and set acquisition timeouts so exhaustion fails fast instead of hanging.
+- **Set application-level keepalives shorter than the smallest idle timeout on the path.** Load balancers and NATs silently drop idle connections; an HTTP/2 PING or WebSocket ping/pong keeps them alive (or detects death) far faster than TCP keepalive's 2-hour default.
+- **Treat `CLOSE_WAIT` as your bug and `TIME_WAIT` as theirs.** Lots of `CLOSE_WAIT` = your code isn't closing sockets. Lots of `TIME_WAIT` = you're the side actively closing huge numbers of short-lived connections (the fix is pooling, not just `tcp_tw_reuse`).
+- **Enable `TCP_NODELAY` for latency-sensitive, small-message traffic** (RPC, game state, interactive). Leave Nagle on for bulk transfer.
+
+:::warning 🔥 War Story — "Cannot Assign Requested Address" at Peak Traffic
+A service called a downstream REST API for every request, and its HTTP client was (mis)configured to open a brand-new connection each time instead of reusing a pool. At low traffic it was fine. As load climbed, the service started throwing `java.net.BindException: Cannot assign requested address` and latency spiked — but the downstream API and the network were both perfectly healthy.
+
+The cause was **TIME_WAIT + ephemeral port exhaustion**. Every short-lived connection, after closing, parked its local port in `TIME_WAIT` for 2×MSL (~60s). The client side only has ~28,000 ephemeral ports; at a few thousand new connections per second, all of them ended up stuck in `TIME_WAIT` and the OS had no free local port left to open the next connection. `ss -s` showed tens of thousands of `TIME_WAIT` sockets. The team's first instinct — shrink `tcp_fin_timeout` and enable `tcp_tw_reuse` — only delayed the wall. **The real fix was connection pooling with keep-alive**, which collapsed thousands of churning connections into a handful of long-lived ones and made the `TIME_WAIT` pile (and the latency) vanish. The lesson — *TCP connections are not free objects you create per request; the handshake and TIME_WAIT mean unpooled connections will exhaust ports long before they exhaust the network.*
 :::
 
 ---

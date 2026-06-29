@@ -7,6 +7,10 @@ title: "08 — Common Interview Questions"
 
 This chapter brings together everything from the previous chapters into the types of questions you'll actually face in senior software engineering interviews. Practice these until you can answer them confidently and with depth.
 
+:::tip 🛠️ Answer From Experience, Not Just Theory
+Senior interviews reward answers grounded in real work. As you practice, draw on the **🛠️ Applying This in Your SE Role** sections and **🔥 War Stories** from each chapter — saying "I'd reach for connection pooling here because I once watched unpooled connections exhaust ephemeral ports under load" beats reciting the TCP handshake. The "what happens when you type google.com" walkthrough below is really a tour of every layer you now know how to *apply*, not just define.
+:::
+
 ---
 
 ## 🌐 Classic Questions with Detailed Answers

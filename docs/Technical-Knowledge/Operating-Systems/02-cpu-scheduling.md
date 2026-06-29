@@ -268,6 +268,10 @@ Example with 2 tasks, nice 0 and nice 5:
 Linux 6.6 (2023) replaced CFS with **EEVDF** (Earliest Eligible Virtual Deadline First). It improves latency for interactive tasks by considering virtual deadlines rather than just vruntime. The core idea of fairness remains.
 :::
 
+:::tip 🔌 Why It Matters in Your SE Role
+`vruntime` weights and `nice` values aren't just exam trivia — they're the mechanism behind **Kubernetes CPU requests**. When you set `resources.requests.cpu: 500m`, the kubelet translates that into a CFS **`cpu.shares`** value (≈ a scheduling weight), and CFS uses it to decide each container's fair slice when the node is contended. CPU *limits* are different and more dangerous: they set a hard **CFS bandwidth quota** (`cpu.cfs_quota_us`), and exceeding it gets your process **throttled** — frozen until the next 100 ms period — even if the node has idle cores. Knowing "fair share (shares/weight)" vs "hard cap (quota)" is the difference between a config that protects latency and one that silently wrecks your p99.
+:::
+
 ---
 
 ## 4. Algorithm Comparison
@@ -310,6 +314,35 @@ chrt -f -p 50 <pid>              # Set SCHED_FIFO with priority 50
 taskset -p <pid>                 # Show CPU affinity mask
 taskset -c 0,1 ./my_program     # Pin to CPU 0 and 1
 ```
+
+---
+
+## 🛠️ Applying This in Your SE Role
+
+You will almost never implement a scheduler. But you constantly *configure* one — every time you set a CPU request/limit, a `nice` level, or a real-time priority — and you'll debug its behavior whenever a service has good average latency but a terrible tail.
+
+### Where this shows up in everyday work
+
+| You're doing this… | …and the scheduling concept behind it is |
+|--------------------|-------------------------------------------|
+| Setting k8s `requests.cpu` / `limits.cpu` | CFS `cpu.shares` (fair-share weight) vs `cfs_quota` (hard cap → throttling) |
+| A cron/batch job starving your API | Priority & fairness — run batch work at higher `nice` (lower priority) |
+| Tuning a low-latency consumer or media pipeline | `SCHED_FIFO` / `SCHED_RR` real-time classes, CPU pinning |
+| "p99 latency is bad but average CPU is only 30%" | **CFS throttling** from a too-low CPU limit, or convoy effect behind a slow request |
+| Choosing a worker/quantum-like timeout for a job runner | Round-robin quantum trade-off: too small = overhead, too big = head-of-line blocking |
+
+### What to actually do
+
+- **For latency-sensitive services, prefer setting CPU *requests* and being cautious with *limits*.** A request guarantees a fair share; an aggressive limit invites throttling. Many teams set `requests` and leave `limits` unset (or generous) for latency-critical pods, and watch `container_cpu_cfs_throttled_periods_total` in Prometheus.
+- **Demote background work with `nice`/`renice`** (or a low-share cgroup) so a reindex or report job can't steal CPU from request-serving threads.
+- **Recognize the convoy effect in your own systems.** One slow request holding a single-threaded worker (or an event loop) blocks everyone behind it — the FCFS pathology, just at the application layer. The fix is the same idea as preemption: timeouts, bounded work per turn, and separate pools for slow operations.
+- **Reserve real-time classes (`chrt -f`) for genuinely latency-critical loops only** — a runaway `SCHED_FIFO` thread can starve the kernel itself.
+
+:::warning 🔥 War Story — The Pod That Was Throttled at 30% CPU
+A team set a conservative `limits.cpu: 500m` on a Java API "to be safe." Dashboards showed average CPU around 30%, yet p99 latency periodically spiked to several seconds for no obvious reason. CPU graphs looked *healthy*, so the team chased GC, the database, and the network for a week.
+
+The real culprit was **CFS bandwidth throttling**. The JVM ran a burst of work — a GC cycle plus a few request threads waking at once — that briefly needed more than 500m. CFS handed out the 50 ms of quota for the 100 ms period, then **froze every thread in the cgroup for the remaining 50 ms**. Averaged over a minute the CPU looked idle; at 100 ms resolution the app was repeatedly paused mid-request. The smoking gun was `container_cpu_cfs_throttled_periods_total` climbing steadily. **Fix:** raise the limit (and right-size based on actual burst, not average), which immediately collapsed the p99. The lesson — *a CPU limit is a deadline-enforced pause, not a soft ceiling; "low average CPU" tells you nothing about throttling at sub-second granularity.*
+:::
 
 ---
 

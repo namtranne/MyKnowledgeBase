@@ -7,6 +7,16 @@ title: "Networking Interview Guide"
 
 A comprehensive preparation guide for **senior software engineer** networking interviews — covering the OSI model, TCP/UDP, HTTP/HTTPS, DNS, CDN, load balancing, network security, socket programming, and API design.
 
+:::tip 🛠️ Built for Engineers, Not Just Exams
+This guide is written from a **software engineer's perspective** — every chapter ties networking theory to the work you actually do. Look for three recurring aids:
+
+- **🔌 Why It Matters in Your SE Role** — short callouts linking a concept to a real decision (connection pooling, idempotent retries, DNS TTL before a cutover).
+- **🛠️ Applying This in Your SE Role** — a section per chapter mapping the theory to everyday tasks, with concrete "what to actually do" guidance.
+- **🔥 War Stories** — real production incidents (port exhaustion, double charges, a "healthy" node serving errors, a one-field rename that broke every client) that show the concept biting in the wild — and how the fundamentals explain the fix.
+
+Read a chapter for the interview; reread the SE sections when you hit the problem at work.
+:::
+
 ---
 
 ## 📍 Roadmap Overview

@@ -434,6 +434,15 @@ Connections ──────► │  Boss Group   │  (1-2 threads)
         └──────────┘ └──────────┘ └──────────┘
 ```
 
+:::tip 🔌 Why It Matters in Your SE Role
+The reactor pattern delivers staggering concurrency from very few threads — but it comes with one ironclad rule you must respect in your handler code: **never block the event loop.** A single thread is multiplexing thousands of connections, so any operation that blocks it (a synchronous JDBC call, a slow file read, a CPU-heavy loop, an unbounded `KEYS *` on Redis) freezes *every* connection that thread serves, not just one. This is the practical reason:
+
+- **Redis is single-threaded** → one slow command (`KEYS *`, a giant `SORT`, a heavy Lua script) stalls the entire server for all clients. You use `SCAN` instead of `KEYS`, and keep commands O(small).
+- **In Netty / Node.js / WebFlux**, blocking work must be offloaded to a separate worker pool (`scheduler`/`worker_threads`/`boundedElastic`), leaving the event-loop threads free to keep dispatching I/O.
+
+When a reactive service mysteriously stalls under load, "someone blocked the event loop" is the first hypothesis to check.
+:::
+
 ---
 
 ## 💥 C10K Problem & Solutions
@@ -544,6 +553,35 @@ Outbound data flow:
 │  Bytes)  │  │  Frame)  │  │          │
 └──────────┘  └──────────┘  └──────────┘
 ```
+
+---
+
+## 🛠️ Applying This in Your SE Role
+
+You probably won't hand-write an `epoll` loop — your framework (Netty, Node, asyncio, Spring WebFlux) did that for you. But you *do* configure connection pools, choose blocking vs reactive stacks, and debug "why does the service fall over at N connections?" — all of which are this chapter applied.
+
+### Where this shows up in everyday work
+
+| You're doing this… | …and the socket/I/O concept behind it is |
+|--------------------|-------------------------------------------|
+| Picking Spring MVC (thread-per-request) vs WebFlux (reactive) | Blocking I/O vs the reactor/event-loop model |
+| Sizing HikariCP / a DB or HTTP pool | Connection pooling + the cost of the handshake |
+| "Pool exhausted / connection timeout" errors | Leaks, slow queries, or an undersized/oversized pool |
+| Debugging a stalled Redis or reactive service | A blocking/CPU-heavy op on a single-threaded event loop |
+| Capacity-planning a chat/streaming server | C10K → event-driven architecture, off-heap connection state |
+
+### What to actually do
+
+- **Size pools small and deliberately, not "big for safety."** The HikariCP formula (`cores × 2 + spindles`) usually lands around 10–20 — far smaller than people expect. A bigger pool just pushes contention onto the database and adds context-switching; it rarely adds throughput.
+- **Always return connections (try-with-resources / `finally`) and set an acquisition timeout.** A leak silently drains the pool until every request hangs waiting for a connection that never comes back.
+- **Match the stack to the workload.** Reactive (WebFlux/Node) shines for high-concurrency, I/O-bound fan-out; classic thread-per-request is simpler and perfectly fine for moderate load — *as long as* you don't block reactive threads if you go reactive.
+- **Keep event-loop work non-blocking and bounded.** Offload blocking/CPU work to a dedicated pool; on Redis, prefer `SCAN` over `KEYS` and avoid O(N) commands on big keys.
+
+:::warning 🔥 War Story — Making the Pool Bigger Made Everything Slower
+A service was hitting occasional "connection timeout — pool exhausted" errors under load, so the team did the obvious thing: they bumped HikariCP's `maximumPoolSize` from 20 to 200, reasoning that more connections meant more throughput. Latency got *worse*, not better — p99 climbed, the database's CPU spiked, and soon the whole fleet (each instance now demanding 200 connections) drove Postgres past its `max_connections` limit and it started rejecting connections outright.
+
+The mistake was treating the pool as a throughput dial. A database can only execute as many queries in parallel as it has cores/disks; once you exceed that, extra connections don't run faster — they pile up, fighting over CPU and locks, and each query gets *slower* (the exact "larger pools hurt" warning above). With 200 connections per instance across a dozen instances, the DB was drowning in 2,400 connections, most of them just contending. **Fix:** drop the pool back to ~20 (the `cores × 2` neighborhood), and fix the real cause of exhaustion — a connection leak in an error path plus a couple of slow N+1 queries holding connections too long. Throughput went *up* with the smaller pool. The lesson — *a connection pool meters concurrency to match what the database can actually do; sizing it bigger than the DB's real parallelism converts a queue in your app into congestion in your database, which is strictly worse.*
+:::
 
 ---
 

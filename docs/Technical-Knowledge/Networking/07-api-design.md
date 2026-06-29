@@ -115,6 +115,15 @@ GET /users?q=john                           # Search
 **URL path versioning** (`/v1/users`) is the most common in practice (used by Stripe, Twitter, Google). It's not the most "RESTful" but it's the most pragmatic — easy to understand, route, test, and document.
 :::
 
+:::tip 🔌 Why It Matters in Your SE Role
+The reason versioning exists is a hard truth about your job: **once an API has external consumers, you no longer control when they upgrade.** A mobile app sits in users' pockets for months; a partner integration changes on the partner's timeline, not yours. So your API response shape becomes a *contract*, and the rule of thumb is:
+
+- **Additive changes are safe** — adding a new optional field or endpoint won't break a well-written client.
+- **Removing or renaming a field, changing a type, or tightening validation is breaking** — and needs a new version (`/v2`), a deprecation window, and a migration path.
+
+This is exactly why gRPC's protobuf reserves field *numbers* (you never reuse a tag) and GraphQL prefers `@deprecated` fields over deletions: both bake "evolve without breaking existing clients" into the toolchain. Designing for backward compatibility from day one is what lets you keep shipping without a coordinated flag-day upgrade across every consumer.
+:::
+
 ### HATEOAS Example
 
 ```json
@@ -446,6 +455,37 @@ def verify_webhook(payload: bytes, signature: str, secret: str) -> bool:
     ).hexdigest()
     return hmac.compare_digest(f"sha256={expected}", signature)
 ```
+
+---
+
+## 🛠️ Applying This in Your SE Role
+
+API design is the part of this guide you'll *practice* most — every endpoint you ship is a contract someone else builds on. The choices here (REST vs gRPC vs GraphQL, versioning, pagination, idempotency, gateway responsibilities) are daily design-review decisions, and the ones you get wrong are the ones you can't easily take back once clients depend on them.
+
+### Where this shows up in everyday work
+
+| You're doing this… | …and the API concept behind it is |
+|--------------------|------------------------------------|
+| Designing a new service endpoint | REST resource modeling, proper verbs, status codes |
+| Internal service-to-service calls that need speed/streaming | gRPC + protobuf over HTTP/2 |
+| A mobile/BFF API with chatty, nested data needs | GraphQL (and the N+1 trap) |
+| Changing an existing response shape | Versioning + backward compatibility |
+| Listing endpoints over big tables | Cursor/keyset pagination, not offset |
+| Exposing payments/orders | Idempotency keys for safe retries |
+| Cross-cutting auth, rate limiting, routing | The API gateway pattern |
+
+### What to actually do
+
+- **Treat every public response as a contract.** Make changes additive; gate anything breaking behind a new version with a deprecation window. Future-you (and every client team) will thank you.
+- **Use cursor/keyset pagination for anything that grows.** Offset pagination gets slow at high offsets and silently skips or duplicates rows when the underlying data shifts mid-scan.
+- **Default to REST for public/browser APIs, gRPC for internal hot paths.** Expose REST at the edge (via gRPC-Gateway if you like) and keep binary, streaming gRPC between services where latency matters.
+- **Watch for N+1 the moment you add a nested resolver or a loop of per-item lookups** — batch with a DataLoader (GraphQL) or a single `WHERE id IN (...)` query. This isn't GraphQL-specific; it's the most common hidden performance bug in any API that walks relationships.
+
+:::warning 🔥 War Story — The One-Field Rename That Broke Every Mobile Client
+A backend team owned the API behind a mobile app. To clean up a response, they renamed a field from `full_name` to `name` in the user endpoint — a trivial, "obviously harmless" change that shipped in a normal release. Within minutes, support lit up: the mobile app's profile screen was blank for a huge swath of users, and some older app versions crashed outright trying to read a field that no longer existed.
+
+The problem was the part of the contract the backend couldn't see: **millions of installed app versions were hard-coded to read `full_name`, and you can't force users to update an app.** What looked like a rename on the server was a breaking change to every client already in the wild — the "removing/renaming a field is breaking" rule above, learned the hard way. The emergency fix was to roll back and re-add `full_name` *alongside* `name`, returning both. The durable fix was a policy: response changes must be additive, removals require a deprecation window and metrics showing old clients have drained, and breaking shape changes go behind `/v2`. The lesson — *shipping an API means giving up control of the upgrade schedule; from that moment your response shape is a contract, and "just renaming a field" is a coordinated migration whether you planned for it or not.*
+:::
 
 ---
 

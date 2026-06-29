@@ -422,6 +422,10 @@ for (int i = 0; i < nev; i++) {
 nginx uses edge-triggered epoll. Most applications should start with level-triggered.
 :::
 
+:::tip 🔌 Why It Matters in Your SE Role
+`epoll`/`kqueue` is the engine under every "async, non-blocking, event-loop" framework you use — **Node.js, nginx, Redis, Netty, and the reactor in Spring WebFlux** all sit on top of it. This is the concrete answer to "how does Node handle thousands of connections on one thread?": one thread blocks in `epoll_wait`, the kernel hands back only the sockets that are *ready*, and the thread services them and loops. That's why an event-driven service can hold 100K idle connections cheaply while a thread-per-connection server would need 100K threads (~100 GB of stacks). It's also why **you must never make a blocking call inside an event loop** — one slow JDBC or filesystem call stalls *every* connection that thread is multiplexing. The OS theory (O(1) readiness notification vs O(n) `select` scan) is exactly why these frameworks exist.
+:::
+
 ---
 
 ## 12. Zero-Copy I/O
@@ -462,6 +466,36 @@ sendfile(sockfd, in_fd, &offset, file_size);
 - **Kafka** uses sendfile to transfer log segments to consumers
 - **CDNs** and **file transfer services**
 - Any scenario transferring large amounts of data from disk to network
+:::
+
+---
+
+## 🛠️ Applying This in Your SE Role
+
+File systems and I/O look far from application code — until you're explaining why data vanished after a crash, why a service melts under connection load, or why your storage bill is dominated by IOPS. The two ideas that pay off most here are **durability** (page cache vs `fsync`) and **the I/O model** (blocking vs event-driven).
+
+### Where this shows up in everyday work
+
+| You're doing this… | …and the file-system / I/O concept behind it is |
+|--------------------|--------------------------------------------------|
+| Choosing a reactive/async framework (Node, Netty, WebFlux) | `epoll`/`kqueue` I/O multiplexing — many connections, few threads |
+| Tuning Postgres `fsync`, `synchronous_commit`, or a WAL | Journaling / write-ahead logging and write-back vs write-through |
+| Picking an AWS EBS volume type / provisioned IOPS | HDD vs SSD random-IOPS reality, RAID-like striping |
+| Kafka throughput tuning | **Zero-copy** `sendfile` + sequential writes hitting the page cache |
+| "We acknowledged the write but lost it after a power cut" | Write-back **page cache** — data wasn't `fsync`'d to disk |
+| A thread-per-connection server falling over at ~10K clients | The C10K problem — wrong I/O model for the scale |
+
+### What to actually do
+
+- **Know where "written" really means "durable."** A successful `write()` only lands in the page cache. Until `fsync()`/`fdatasync()` returns, a power loss can lose it. This is *why* databases have a WAL and `fsync` on commit — and why disabling `fsync` "for speed" is a data-loss bug waiting for the next crash.
+- **Match the I/O model to the workload.** Thread-per-connection is fine for a few hundred connections and simple code; for tens of thousands of mostly-idle connections (chat, streaming, long-poll), use an event loop. Don't bring blocking calls into that event loop.
+- **Lean on the page cache instead of fighting it.** Sequential access and letting hot data stay cached often beats clever application-level caching. It's why append-only logs (Kafka, LSM-tree DBs) are so fast.
+- **Provision storage by IOPS, not just GB.** A random-read-heavy database on an HDD-backed or low-IOPS volume will be seek-bound (~10 ms each). Reach for SSD/NVMe or provisioned IOPS, and use RAID 10 (not RAID 5) for write-heavy databases.
+
+:::warning 🔥 War Story — The Writes That Were "Saved" but Gone After a Power Cut
+An IoT ingestion service wrote each event to a local file and returned `200 OK` to the device the instant `write()` succeeded. In load tests and normal operation it was flawless and fast. Then a rack lost power, and after reboot the team found **the last ~30 seconds of "successfully saved" events were simply missing** — even though every device had received a success response.
+
+The cause was the **write-back page cache**. `write()` had only copied the bytes into kernel page cache; Linux flushes dirty pages lazily (typically every few seconds). Those pages had never been `fsync`'d to the SSD when the power dropped, so they evaporated — exactly the "writeback mode: risk of stale data after crash" row in the journaling table. The service had been *acknowledging durability it never had*. **Fix:** call `fdatasync()` before returning success for events that truly must survive a crash (and batch the syncs to amortize cost), or hand durability to a real datastore with a configured WAL. The lesson — *the OS makes writes look instant and permanent by caching them in RAM; "the write succeeded" and "the data is on disk" are two different events, and only `fsync` bridges them.*
 :::
 
 ---

@@ -49,6 +49,15 @@ HTTP/2 multiplexes streams over a **single TCP connection**. If a TCP packet is 
 - **PATCH** is not guaranteed to be idempotent (depends on the patch format).
 :::
 
+:::tip 🔌 Why It Matters in Your SE Role
+Idempotency isn't pedantry — it's the rule that decides **what your retry logic and load balancer are allowed to retry automatically**. Networks drop responses all the time: the server processed your request, but the `200 OK` never came back, so the client times out. What happens next depends entirely on the method:
+
+- **GET/PUT/DELETE are idempotent** → a client, proxy, or service mesh can safely retry them. Retrying `PUT /users/42 {…}` twice leaves the same state.
+- **POST is not** → retrying "create a charge" or "place an order" can double-charge or double-book.
+
+This is exactly why payment and order APIs use **idempotency keys**: the client sends a unique key with the POST, and the server deduplicates so a retry is safe. It's why Stripe's API works the way it does. Designing your endpoints around safe/idempotent semantics is what lets the rest of the stack recover from failure without corrupting data.
+:::
+
 ---
 
 ## 📋 HTTP Status Codes
@@ -421,6 +430,36 @@ First Request:                     Second Request:
 
 :::note Deep Dive
 REST, gRPC, and GraphQL are covered in depth in [Chapter 07 — REST, gRPC & API Design](./07-api-design.md).
+:::
+
+---
+
+## 🛠️ Applying This in Your SE Role
+
+The application layer is where you live. Status codes, idempotency, caching headers, and CORS aren't trivia — they're the contract your API exposes to clients, CDNs, browsers, and the other services that retry against you. Getting them right is the difference between a system that degrades gracefully and one that double-charges customers under load.
+
+### Where this shows up in everyday work
+
+| You're doing this… | …and the HTTP concept behind it is |
+|--------------------|-------------------------------------|
+| Designing retry logic / a service mesh retry policy | Method idempotency — what's safe to replay |
+| Returning the right error code | 401 (who are you?) vs 403 (not allowed) vs 429 (slow down) vs 5xx |
+| Debugging 502 / 503 / 504 | Bad gateway vs overloaded vs upstream timeout — different culprits |
+| Adding `Cache-Control` / `ETag` to an endpoint | Conditional requests + CDN caching = massive load reduction |
+| A frontend dev's request is "blocked by CORS" | Preflight `OPTIONS` and `Access-Control-*` headers |
+| Building a live feed / chat / notifications | WebSocket vs SSE vs long polling trade-offs |
+
+### What to actually do
+
+- **Return honest, specific status codes.** Don't `200 OK` an error body, and don't `500` a client mistake. Retries, alerting, and circuit breakers all key off the status code — a `429` with `Retry-After` tells a well-behaved client to back off; a `500` tells it to retry and maybe page someone.
+- **Make mutating endpoints safely retryable.** Use `PUT` with a client-chosen ID, or accept an **idempotency key** on `POST`, so a network-induced retry can't create duplicates.
+- **Cache aggressively at the edge with `ETag` + `Cache-Control`.** A `304 Not Modified` is nearly free and a CDN hit never touches your origin — often the cheapest latency and cost win available.
+- **Debug 5xx by location, not just by code.** A `504` is your gateway giving up on a slow *upstream* (look downstream/at timeouts); a `502` is an upstream returning garbage (look at the app/crash); a `503` is overload (look at capacity/health checks).
+
+:::warning 🔥 War Story — The Timeout That Charged Customers Twice
+A checkout service called a payment provider with a plain `POST /charges`. When the provider was briefly slow, the client's 5-second timeout fired *after* the charge had already succeeded on the provider's side — the response just hadn't come back yet. The client's retry logic, treating the timeout as a failure, sent the exact same `POST` again. The provider happily created a **second charge**. During one slow afternoon, a few hundred customers were billed twice, and the cleanup (refunds, support tickets, trust damage) dwarfed the original bug.
+
+The root cause was retrying a **non-idempotent POST** — exactly the "POST is neither safe nor idempotent" warning above. A timeout means *unknown outcome*, not *failure*, and for a non-idempotent operation you cannot safely retry without help. **Fix:** the client generates an **idempotency key** (a UUID per logical charge) and sends it on every attempt, including retries; the provider records the key and returns the *original* result for any duplicate, so a retry is a no-op. The lesson — *the network will make you retry, and HTTP already told you which methods survive a retry; mutating endpoints must be made idempotent on purpose, because "the response got lost" is a normal Tuesday, not an edge case.*
 :::
 
 ---

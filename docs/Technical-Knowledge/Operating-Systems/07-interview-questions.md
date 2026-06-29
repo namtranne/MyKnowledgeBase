@@ -8,6 +8,10 @@ slug: 07-interview-questions
 
 A curated collection of operating systems questions frequently asked in senior software engineer interviews, with detailed answers, code solutions, and debugging scenarios.
 
+:::tip 🛠️ Answer From Experience, Not Just Theory
+The strongest interview answers connect the concept to something you've actually done or debugged. As you work through these, pull from the **🛠️ Applying This in Your SE Role** sections and **🔥 War Stories** in each chapter — "context switches are expensive *because* of cold caches, which is why I size thread pools to core count and once watched an unbounded pool OOM a service at peak" lands far better than a textbook definition. The scenario questions below are deliberately phrased the way they'd come up on the job.
+:::
+
 ---
 
 ## 1. Conceptual Questions

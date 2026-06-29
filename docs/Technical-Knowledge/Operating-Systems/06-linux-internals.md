@@ -250,6 +250,13 @@ int main() {
 Docker sends `SIGTERM`, waits 10 seconds (configurable via `stop_grace_period`), then sends `SIGKILL`.
 :::
 
+:::tip 🔌 Why It Matters in Your SE Role
+This signal flow *is* the **Kubernetes pod termination lifecycle**, and getting it wrong is the #1 cause of dropped requests during deploys. When a pod is removed, the kubelet sends **`SIGTERM`** to PID 1 of your container, waits `terminationGracePeriodSeconds` (default 30s), then sends the uncatchable **`SIGKILL`**. For zero-downtime rollouts your app must catch `SIGTERM`, stop accepting new requests, drain in-flight ones, and exit before the grace period ends. Two gotchas bite teams constantly:
+
+- **PID 1 doesn't get default signal handling.** If your app runs as PID 1 and registers no `SIGTERM` handler, the kernel may simply *ignore* the signal — and the pod hangs until `SIGKILL`.
+- **Shell-wrapped entrypoints swallow the signal.** `CMD sh -c "java -jar app.jar"` makes the *shell* PID 1; it receives `SIGTERM` and doesn't forward it to the JVM. Use exec-form (`CMD ["java","-jar","app.jar"]`) or an init like `tini`.
+:::
+
 ---
 
 ## 6. Linux Memory Management
@@ -510,6 +517,37 @@ flowchart TD
     I --> It["iostat -x 1 → %util, await, iops<br/>iotop → heavy processes<br/>queue depth (avgqu-sz)"]
     N --> Nt["ss -s → connection counts<br/>sar -n DEV 1 → bandwidth<br/>tcpdump / wireshark"]
 ```
+
+---
+
+## 🛠️ Applying This in Your SE Role
+
+This chapter is your **production debugging toolkit** — the difference between "the service is slow, I don't know why" and a root cause in fifteen minutes. Every tool here (`strace`, `perf`, `lsof`, `ss`, `iostat`, `/proc`) is something you'll reach for during an incident, and cgroups + namespaces are the literal mechanism behind every container you deploy.
+
+### Where this shows up in everyday work
+
+| You're doing this… | …and the Linux internal behind it is |
+|--------------------|---------------------------------------|
+| Writing a Dockerfile `CMD` / handling pod shutdown | Signals (`SIGTERM`/`SIGKILL`) + PID 1 semantics |
+| Setting container CPU/memory limits | **cgroups** (`cpu.max`, `memory.max`) |
+| "Why can container A see/not see X?" | **Namespaces** (PID, net, mount, user) |
+| Debugging "Too many open files" | File-descriptor limits (`ulimit -n`, `/proc/<pid>/limits`, `lsof`) |
+| A pod stuck at high CPU with no obvious cause | `perf top` / `perf record` → flame graph of the hot path |
+| "Requests hang but the app logs look fine" | `strace -p` to see which syscall it's blocked in |
+| Tuning a high-connection server | `sysctl` (`somaxconn`, `tcp_tw_reuse`, ephemeral ports) |
+
+### What to actually do
+
+- **Treat `/proc` and these tools as a triage flow.** Slow service? Bucket it first — CPU (`top`/`perf`), memory (`free`/`vmstat`/`dmesg`), I/O (`iostat`/`iotop`), or network (`ss`/`tcpdump`) — then drill in. Guessing wastes the incident.
+- **Make your container a good citizen of the signal protocol.** Use exec-form entrypoints, handle `SIGTERM`, and set a realistic `terminationGracePeriodSeconds`. This is what makes rolling deploys actually zero-downtime.
+- **Watch FD usage like memory.** Sockets and files are FDs; a leak (unclosed connections) hits `ulimit -n` and the service starts refusing connections with `EMFILE`. `lsof -p <pid> | wc -l` over time reveals the leak.
+- **Right-size cgroup limits from real numbers.** `memory.current` and `cpu.stat` (with `nr_throttled`) tell you whether your limits are protecting the node or strangling your app.
+
+:::warning 🔥 War Story — The Deploy That Dropped Requests Every Single Time
+A team noticed that every rolling deploy produced a burst of 502s and a handful of failed payments — small enough that it was written off as "expected deploy noise" for months. The app *had* a proper `SIGTERM` handler with connection draining, and it worked perfectly when tested locally. In Kubernetes it never ran.
+
+The cause was PID 1. The Dockerfile used `CMD java -jar app.jar`, which Docker runs as `/bin/sh -c "java -jar app.jar"` — so **PID 1 was the shell**, not the JVM. When Kubernetes sent `SIGTERM` on pod shutdown, the shell received it, didn't forward it to its child, and the JVM kept serving until the 30-second grace period elapsed and `SIGKILL` hit it mid-request — killing in-flight connections (and the occasional payment). The graceful-shutdown code was never reached because the signal never arrived. **Fix:** switch to exec-form `CMD ["java","-jar","app.jar"]` so the JVM is PID 1 and receives the signal directly (or add `tini` as an init to forward signals). The 502s on deploy disappeared. The lesson — *`SIGTERM` goes to PID 1, and a shell-form entrypoint quietly makes the shell PID 1; your beautiful shutdown logic is dead code if the signal never reaches your process.*
+:::
 
 ---
 

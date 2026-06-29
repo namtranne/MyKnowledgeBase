@@ -104,6 +104,10 @@ sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder
 sudo systemd-resolve --flush-caches
 ```
 
+:::tip 🔌 Why It Matters in Your SE Role
+**TTL is the lever that controls how fast you can fail over or migrate** — and it's a classic foot-gun. DNS answers are cached at every level (browser, OS, resolver) for the TTL duration, so when you change an A record, old clients keep hitting the *old* IP until their cached entry expires. If your TTL is 24 hours and you need an emergency cutover, a large fraction of traffic will keep flowing to the dead server for up to a day. The pattern every SRE follows: **lower the TTL (to ~60s) well *before* a planned migration**, do the cutover, then raise it back. The same mechanic is why DNS-based failover (Route 53 health checks, GeoDNS) is only as fast as your TTL — and why some clients (notably the JVM, which historically cached DNS forever via `networkaddress.cache.ttl`) ignore TTL entirely and need explicit configuration.
+:::
+
 ### Recursive vs Iterative Queries
 
 | Type | Description | Who Does the Work |
@@ -284,6 +288,36 @@ The lines blur significantly. **Nginx** acts as a reverse proxy, load balancer, 
 | **AWS NLB** | L4 | Ultra-low latency, millions of requests/sec, static IP |
 | **Envoy** | L4/L7 | Service mesh sidecar, gRPC support, observability |
 | **Traefik** | L7 | Auto-discovery, native Kubernetes/Docker support |
+
+---
+
+## 🛠️ Applying This in Your SE Role
+
+DNS, CDNs, and load balancers are the infrastructure your code runs *behind*. You may not own them, but you configure them constantly — health endpoints, cache headers, TTLs, session strategy — and when they're misconfigured, your perfectly healthy service still serves errors.
+
+### Where this shows up in everyday work
+
+| You're doing this… | …and the infra concept behind it is |
+|--------------------|--------------------------------------|
+| Writing a `/health` (liveness/readiness) endpoint | LB health checks — depth determines whether bad nodes get traffic |
+| Planning a zero-downtime IP/region cutover | DNS **TTL** lowering + failover |
+| Making a service horizontally scalable | Avoiding **sticky sessions** → externalize session to Redis |
+| Tuning CDN cache-hit rate | `Cache-Control`/`ETag`, versioned URLs, query normalization |
+| Choosing NLB vs ALB vs API Gateway | L4 vs L7 vs API management features |
+| Cache/shard key routing | **Consistent hashing** to minimize remaps on scale events |
+
+### What to actually do
+
+- **Make health checks *deep*, but not flaky.** A readiness check should verify the critical dependencies a request actually needs (DB, cache) so the LB removes a node that can't serve — but don't fail readiness on a non-critical dependency, or one slow downstream will drain your whole fleet. Separate **liveness** (restart me) from **readiness** (don't send me traffic).
+- **Externalize session state.** Sticky sessions make deploys and autoscaling painful — a terminated node drops its users' sessions. Put session state in Redis so any instance can serve any request.
+- **Pre-lower DNS TTL before migrations**, and keep both old and new targets live until the old TTL fully drains.
+- **Treat cache-hit rate as a first-class metric.** A few header fixes (longer `max-age`, normalized query params, versioned asset URLs) can take a CDN from 30% to 95% hit rate, cutting both latency and origin cost dramatically.
+
+:::warning 🔥 War Story — The "Healthy" Server That Was Serving Nothing but Errors
+A service ran six instances behind an ALB. One night users reported that roughly **one in six requests failed** — random, intermittent, impossible to reproduce on a single instance. Dashboards showed all six targets as *healthy*, so the load balancer kept routing to all of them, and the team spent hours hunting a phantom bug.
+
+The culprit was a **shallow health check**. The `/health` endpoint returned `200 OK` if the process was up — it never touched the database. On one instance the DB connection pool had become exhausted (a slow-query pileup), so every *real* request to that node failed with `500`, but the trivial health check still passed. The ALB, seeing green, faithfully sent ~1/6 of traffic into a black hole. **Fix:** make readiness checks actually exercise the critical path (a cheap `SELECT 1` and a cache ping), exactly like the Spring Boot example above that returns `503` when the DB is down. The bad node immediately failed its checks, the ALB pulled it from rotation, and the error rate dropped to zero. The lesson — *a load balancer is only as smart as your health check; "the process is running" and "this instance can serve requests" are different claims, and the LB can only act on the one you actually measure.*
+:::
 
 ---
 

@@ -100,6 +100,17 @@ stmt.setString(1, username);
 | **Least privilege** | DB user should have minimal permissions |
 | **WAF** | Web Application Firewall detects SQL injection patterns |
 
+:::tip 🔌 Why It Matters in Your SE Role
+This is the security topic you touch *every day in code review*, not just during an interview. The single line that separates "secure" from "front-page breach" is whether user input ever gets concatenated into a query, a command, a path, or markup. The defenses here map directly to habits you enforce on every PR:
+
+- **Parameterized queries / ORM bind params** for anything touching a database — never string-build SQL.
+- **Output encoding + framework auto-escaping** (React/Angular/Vue) for anything rendered to a page → stops XSS.
+- **`SameSite` cookies + CSRF tokens** for state-changing requests.
+- **Validate, don't trust** — same principle behind avoiding SSRF (don't let user input pick the URL your server fetches) and command injection.
+
+Most real breaches aren't exotic — they're one of these basics skipped under deadline pressure. Knowing *why* the mitigation works is what lets you spot the vulnerable line in a diff.
+:::
+
 ---
 
 ### XSS (Cross-Site Scripting)
@@ -436,6 +447,37 @@ Estimated count = 80 × (1 - 0.4) + 30 = 48 + 30 = 78 ✅ (under 100)
 | 8 | **Software & Data Integrity** | Untrusted code updates, insecure CI/CD pipelines |
 | 9 | **Logging & Monitoring Failures** | Insufficient logging makes attacks undetectable |
 | 10 | **SSRF** | Server-side request forgery — tricking server to make internal requests |
+
+---
+
+## 🛠️ Applying This in Your SE Role
+
+Security isn't a separate team's job that happens after you ship — it's woven through the code you write daily: how you build queries, validate input, handle tokens, store secrets, and limit abuse. The attacks here are the ones that actually hit real services, and the mitigations are concrete coding habits.
+
+### Where this shows up in everyday work
+
+| You're doing this… | …and the security concept behind it is |
+|--------------------|------------------------------------------|
+| Writing any DB query with user input | Parameterized queries / least privilege (injection) |
+| Rendering user-supplied content | Output encoding + CSP (XSS) |
+| Implementing "Login with Google" | OAuth 2.0 authorization code (+ PKCE for SPAs/mobile) |
+| Verifying a bearer token in middleware | JWT signature/`alg`/`exp`/`aud` validation |
+| Protecting an API from abuse/scrapers | Rate limiting (token bucket / sliding window in Redis) |
+| Securing service-to-service calls | mTLS in the service mesh |
+| Storing config / API keys | Secrets management — never in JWT payload, repo, or logs |
+
+### What to actually do
+
+- **Never build SQL/commands/paths from raw input.** Parameterized queries and ORMs aren't a style preference — they're the fix for the #1 OWASP category. Same instinct kills command injection and path traversal.
+- **Verify tokens; don't just decode them.** A JWT's payload is *Base64, not encryption* — anyone can read and rewrite it. Always verify the signature, pin the expected `alg`, and check `exp`/`iss`/`aud`. Treat the library's "verify" call as mandatory, never "decode."
+- **Rate-limit at a shared layer.** In a multi-instance service, per-instance counters don't bound global traffic — use Redis with atomic `INCR`/Lua (token bucket or sliding-window counter) and return `429` + `Retry-After`.
+- **Keep secrets out of code and tokens.** Use a secrets manager (Vault, AWS Secrets Manager, KMS), scrub them from logs, and rotate. Short-lived access tokens (5–15 min) limit the blast radius of a leak.
+
+:::warning 🔥 War Story — The "alg: none" Token That Made Everyone an Admin
+A microservice validated incoming JWTs with a hand-rolled middleware that *decoded* the token, read the `roles` claim, and authorized accordingly. It worked perfectly in testing. What it didn't do was **verify the signature** — the developer had used the JWT library's `decode()` method instead of `verify()`, assuming they did the same thing.
+
+An attacker noticed and simply forged a token: they Base64-encoded a header of `{"alg":"none"}`, a payload of `{"sub":"attacker","roles":["admin"]}`, and an empty signature. Because the middleware never checked the signature or pinned the algorithm, it happily accepted the forged token and granted admin access — to anyone who could craft a string. This is the textbook **`alg: none` attack** called out in the JWT pitfalls above. **Fix:** use the library's `verify()` with an explicit allow-list of algorithms (e.g., only `RS256`), reject `none`, and validate `exp`/`iss`/`aud`. The lesson — *a JWT is only as trustworthy as your verification step; decoding tells you what a token claims, but only verifying the signature tells you whether to believe it, and "decode" vs "verify" is the entire ballgame.*
+:::
 
 ---
 

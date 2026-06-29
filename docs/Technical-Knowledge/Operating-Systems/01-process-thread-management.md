@@ -242,6 +242,14 @@ flowchart LR
 The trade-off: you dedicate entire CPU cores to a single task (no sharing). This only makes sense when latency matters more than CPU efficiency — e.g., processing 10M+ packets/second or sub-microsecond trading.
 :::
 
+:::tip 🔌 Why It Matters in Your SE Role
+This is the theory behind **thread-pool sizing** — a decision you make every time you configure an `ExecutorService`, a web server's worker count, or a DB connection pool. Oversizing the pool doesn't make things faster; past the core count, threads just fight for the CPU and you pay the context-switch + cold-cache tax on every switch. Rules of thumb you can actually use:
+
+- **CPU-bound work** (hashing, compression, JSON parsing): pool size ≈ number of cores. More threads = more switching, not more throughput.
+- **I/O-bound work** (DB calls, HTTP fanout): you can go higher, since threads spend most of their time blocked. Little's Law gives the real target: `threads ≈ target_throughput × avg_latency`.
+- **Watch `vmstat 1`** — the `cs` (context switches/sec) column spiking into the hundreds-of-thousands while CPU sits idle is the classic "too many threads / lock contention" signature.
+:::
+
 ---
 
 ## 5. Thread Models
@@ -563,6 +571,36 @@ int main() {
 - **Pipes** → simple parent-child streaming
 - **Signals** → lightweight notifications (SIGHUP for config reload)
 - **Message queues** → when you need message boundaries and priorities
+:::
+
+---
+
+## 🛠️ Applying This in Your SE Role
+
+You rarely call `fork()` or `clone()` by hand. But the process/thread model is the hidden machinery behind decisions you make constantly — and behind the production incidents you'll be paged for.
+
+### Where this shows up in everyday work
+
+| You're doing this… | …and the process/thread concept driving it is |
+|--------------------|------------------------------------------------|
+| Setting `server.tomcat.threads.max`, Gunicorn `--workers`, or an `ExecutorService` size | Context-switch cost & the CPU-bound vs I/O-bound distinction |
+| Picking **virtual threads** (Java 21 / Loom) or **goroutines** for a high-fanout service | M:N scheduling — millions of cheap user threads over a few OS threads |
+| Choosing a **multi-process** worker model (Gunicorn, Unicorn, nginx, Chrome) | Isolation: one crashed worker doesn't take down the rest |
+| Sharing state between workers via **Redis / shared memory** instead of in-process | Processes don't share an address space — you need IPC |
+| Debugging an OOM after a traffic spike | Each OS thread reserves ~1 MB of stack; thread-per-request doesn't scale |
+| Reading `SIGTERM` handling in a graceful-shutdown hook | Signals are the lightweight IPC your orchestrator (k8s) uses to stop pods |
+
+### What to actually do
+
+- **Default to a bounded pool, never unbounded thread-per-task.** An unbounded pool under a traffic spike is a self-inflicted OOM (each thread = ~1 MB stack + a `task_struct`).
+- **Match the pool to the workload.** Mixing CPU-bound and I/O-bound work in one pool starves both — give them separate pools.
+- **Inside containers, check what "cores" means.** A JVM or Go runtime that sees the *host's* 64 cores while your pod is capped at 2 CPUs will size its pools 32× too large. Set `GOMAXPROCS` / `-XX:ActiveProcessorCount` to the cgroup limit (modern runtimes mostly do this now, but verify).
+- **Reach for multi-process when you need a fault/security boundary**, and threads (or virtual threads) when you need cheap concurrency with shared state.
+
+:::warning 🔥 War Story — The Thread-Per-Request Service That Only Died in Production
+A payments service used a classic `new Thread(handler).start()` per incoming request. It sailed through code review and load tests (which capped at ~200 concurrent requests). On the first real promo day, traffic hit ~8,000 concurrent in-flight requests. Each thread reserved ~1 MB of stack, so the JVM tried to reserve ~8 GB of thread stacks alone — on a 4 GB pod. The result wasn't a slow service; it was `OutOfMemoryError: unable to create new native thread`, then a crash loop, then a cascading failure as retries piled onto the remaining replicas.
+
+**Root cause:** unbounded concurrency × per-thread stack cost — exactly the "creation overhead / scalability limit" rows in the kernel-thread table above. **Fix:** a bounded pool sized from Little's Law (`~throughput × latency`), plus a queue with backpressure that sheds load instead of spawning threads. The deeper fix shipped later: virtual threads, so the per-task cost dropped from ~1 MB to a few KB and the bound could be raised safely. The lesson — *the OS makes thread creation look cheap until the exact moment it isn't, and that moment is always peak traffic.*
 :::
 
 ---

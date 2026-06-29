@@ -47,6 +47,14 @@ From fastest/smallest (top) to slowest/largest (bottom):
 Memorize the order of magnitude: **registers < L1 < L2 < L3 < RAM < SSD < HDD < Network**. Every level is roughly **10× slower** than the one above it.
 :::
 
+:::tip 🔌 Why It Matters in Your SE Role
+This table is the single best back-of-envelope tool you own. Before optimizing, ask *which level am I hitting?* — that tells you whether an optimization is even worth it:
+
+- **An in-memory cache hit (~100 ns) vs a same-DC network call to Redis (~500 μs) is ~5,000×.** That's why a local/near cache in front of a remote one is so effective, and why "just add a cache" so often wins.
+- **A disk seek (~10 ms) vs RAM (~100 ns) is ~100,000×.** This is the whole reason databases obsess over keeping the working set and indexes in the page cache.
+- When someone proposes shaving a few nanoseconds off a code path that's followed by a 500 μs DB round trip, this table is your evidence that it won't move the needle. **Optimize the slowest level on the path first.**
+:::
+
 ---
 
 ## 2. Address Space and Contiguous Allocation
@@ -531,6 +539,36 @@ gcc -fsanitize=address -g my_program.c -o my_program
 
 :::warning Stack Overflow
 Default stack size is 8 MB on Linux (`ulimit -s`). Deep recursion or large local arrays can overflow it. Solutions: increase stack size, convert recursion to iteration, or allocate large buffers on the heap.
+:::
+
+---
+
+## 🛠️ Applying This in Your SE Role
+
+Memory management is where "it worked on my machine / in staging" goes to die. The concepts here — RSS vs working set, the page cache, allocator behavior, and the difference between a *limit* and a *leak* — are exactly what you reason about when a pod gets `OOMKilled` or a service's memory creeps up overnight.
+
+### Where this shows up in everyday work
+
+| You're doing this… | …and the memory concept behind it is |
+|--------------------|---------------------------------------|
+| Setting k8s `resources.limits.memory` | The cgroup memory cap — exceeding it is an instant **OOMKill** (no throttle, no swap by default) |
+| Sizing a JVM with `-Xmx` inside a container | Heap is only *part* of RSS — thread stacks, metaspace, and native/direct buffers count too |
+| "Why does `free`/RSS not drop after we released memory?" | Allocators (glibc) keep freed memory in their arena; only `mmap`'d blocks return to the OS |
+| "The box has almost no free memory!" panic | Most of it is **page cache** — reclaimable, not used. Look at `available`, not `free` |
+| Switching Redis/a service to **jemalloc** | Reducing allocator fragmentation under many-threaded, varied-size workloads |
+| A DB/search engine that's fast on warm data, slow after restart | Cold **page cache** — the working set hasn't been paged back in yet |
+
+### What to actually do
+
+- **Distinguish a limit from a leak.** Steadily climbing RSS that plateaus and stays flat is usually the allocator/page cache holding memory for reuse — not a leak. A leak climbs *without bound* until OOM. Confirm with a heap profiler (`jmap`+MAT, Go `pprof`, ASan) before assuming.
+- **Set the container memory limit above total RSS, not just heap.** For the JVM, budget for `-Xmx` + metaspace + thread stacks (~1 MB each) + direct byte buffers + JIT code cache. This native overhead is the #1 cause of "OOMKilled but heap looked fine."
+- **Read `available`, not `free`.** `free -m`'s "available" column already accounts for reclaimable page cache. Alerting on low `free` will page you for a perfectly healthy box.
+- **Use `oom_score_adj`** to protect a critical sidecar/agent (or make a sacrificial process the preferred kill target) when co-locating workloads.
+
+:::warning 🔥 War Story — OOMKilled With "Plenty of Heap Left"
+A streaming service running on Netty kept getting `OOMKilled` by Kubernetes every few hours. The JVM was configured with `-Xmx3g` in a 4 GB pod, and heap dashboards showed heap usage comfortably under 2 GB — so the team kept *lowering* `-Xmx`, which made it worse.
+
+The leak wasn't on the heap at all. Netty allocates **direct (off-heap) byte buffers** via `mmap`/`malloc` for zero-copy I/O, and a handler was failing to release them under a specific error path. That native memory counts toward the container's cgroup RSS but is invisible to `-Xmx` and heap graphs. RSS quietly climbed past 4 GB while the heap looked fine, and the kernel's OOM killer reaped the process. The tell was that `container_memory_working_set_bytes` (cgroup RSS) kept rising while JVM heap was flat — the gap *was* the off-heap buffers. **Fix:** cap `-XX:MaxDirectMemorySize`, fix the buffer leak (`ReferenceCountUtil.release`), and size the pod limit to total RSS, not heap. The lesson — *the container limits **RSS**, not your language's heap; anything `mmap`'d or `malloc`'d outside the managed heap still counts, and still gets you killed.*
 :::
 
 ---

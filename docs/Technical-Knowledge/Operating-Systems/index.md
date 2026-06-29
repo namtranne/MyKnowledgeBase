@@ -7,6 +7,16 @@ title: "Operating Systems Interview Guide"
 
 A comprehensive, senior-engineer-level guide to Operating Systems concepts frequently tested in system design and backend engineering interviews.
 
+:::tip 🛠️ Built for Engineers, Not Just Exams
+This guide is written from a **software engineer's perspective** — every chapter connects OS theory to the work you actually do. Look for three recurring aids:
+
+- **🔌 Why It Matters in Your SE Role** — short callouts linking a concept to a real decision (thread-pool sizing, container limits, optimistic locking).
+- **🛠️ Applying This in Your SE Role** — a section per chapter mapping the theory to everyday tasks, with concrete "what to actually do" guidance.
+- **🔥 War Stories** — real production incidents (OOMKills, deadlocks, throttling, dropped deploys) that show the concept biting in the wild — and how the OS fundamentals explain the fix.
+
+Read a chapter for the interview; reread the SE sections when you hit the problem at work.
+:::
+
 ---
 
 ## 🗺️ Learning Roadmap
