@@ -12,23 +12,17 @@ Memory management is one of the most critical OS responsibilities — it determi
 
 ## 1. Memory Hierarchy
 
-```
-           ┌──────────┐
-           │ CPU Regs  │  ◄── ~0.3 ns    (bytes)
-           ├──────────┤
-           │ L1 Cache  │  ◄── ~1 ns      (32-64 KB per core)
-           ├──────────┤
-           │ L2 Cache  │  ◄── ~4 ns      (256 KB-1 MB per core)
-           ├──────────┤
-           │ L3 Cache  │  ◄── ~10 ns     (8-64 MB shared)
-           ├──────────┤
-           │   DRAM    │  ◄── ~100 ns    (8-256 GB)
-           ├──────────┤
-           │   SSD     │  ◄── ~100 μs    (256 GB-8 TB)
-           ├──────────┤
-           │   HDD     │  ◄── ~10 ms     (1-20 TB)
-           └──────────┘
-```
+From fastest/smallest (top) to slowest/largest (bottom):
+
+| Level | Access latency | Typical size |
+|-------|----------------|--------------|
+| **CPU Registers** | ~0.3 ns | bytes |
+| **L1 Cache** | ~1 ns | 32–64 KB per core |
+| **L2 Cache** | ~4 ns | 256 KB–1 MB per core |
+| **L3 Cache** | ~10 ns | 8–64 MB shared |
+| **DRAM** | ~100 ns | 8–256 GB |
+| **SSD** | ~100 μs | 256 GB–8 TB |
+| **HDD** | ~10 ms | 1–20 TB |
 
 ### ⚡ Latency Numbers Every Programmer Should Know
 
@@ -59,24 +53,17 @@ Memorize the order of magnitude: **registers < L1 < L2 < L3 < RAM < SSD < HDD < 
 
 ### Process Memory Layout
 
-```
-High Address ┌──────────────────────┐
-             │      Kernel Space     │  (not accessible in user mode)
-             ├──────────────────────┤  ← 0xFFFFFFFF (32-bit)
-             │       Stack  ↓       │  Local variables, function frames
-             │          ...         │
-             │          ...         │  ← Stack grows downward
-             │                      │
-             │          ...         │  ← Heap grows upward
-             │       Heap   ↑       │  Dynamic allocation (malloc)
-             ├──────────────────────┤
-             │       BSS            │  Uninitialized global variables
-             ├──────────────────────┤
-             │       Data           │  Initialized global variables
-             ├──────────────────────┤
-             │       Text (Code)    │  Executable instructions (read-only)
-Low Address  └──────────────────────┘  ← 0x00000000
-```
+From high address (top, `0xFFFFFFFF`) down to low address (`0x00000000`):
+
+| Region | Contents |
+|--------|----------|
+| **Kernel Space** | not accessible in user mode |
+| **Stack** ↓ | local variables, function frames — *grows downward* |
+| *(gap)* | unused address range between stack and heap |
+| **Heap** ↑ | dynamic allocation (`malloc`) — *grows upward* |
+| **BSS** | uninitialized global variables |
+| **Data** | initialized global variables |
+| **Text (Code)** | executable instructions (read-only) |
 
 ### Contiguous Memory Allocation
 
@@ -99,18 +86,9 @@ In early systems, each process was allocated a single contiguous block of memory
 | **Internal** | Allocated block is larger than needed → wasted space inside the block | Fixed-size partitions, paging | Smaller allocation units |
 | **External** | Total free memory is enough, but it's scattered in non-contiguous blocks | Variable-size partitions, segmentation | Compaction, paging |
 
-```
-External Fragmentation:
-┌──────┬────┬──────┬────┬──────┬────┐
-│ Used │Free│ Used │Free│ Used │Free│  Total free: 12 KB (scattered)
-│ 8 KB │4KB │ 16KB │4KB │ 8KB  │4KB │  Can't allocate 10 KB contiguous!
-└──────┴────┴──────┴────┴──────┴────┘
-
-After Compaction:
-┌──────┬──────┬──────┬────────────────┐
-│ Used │ Used │ Used │     Free       │  Total free: 12 KB (contiguous)
-│ 8 KB │ 16KB │ 8KB  │    12 KB       │  Now 10 KB allocation succeeds!
-└──────┴──────┴──────┴────────────────┘
+```mermaid
+flowchart TB
+    A["Fragmented memory<br/>Used 8KB · Free 4KB · Used 16KB · Free 4KB · Used 8KB · Free 4KB<br/>12 KB free but scattered → cannot allocate 10 KB contiguous"] -->|compaction| B["After compaction<br/>Used 8KB · Used 16KB · Used 8KB · Free 12KB<br/>12 KB contiguous → 10 KB allocation succeeds"]
 ```
 
 ---
@@ -123,42 +101,39 @@ Paging eliminates external fragmentation by dividing memory into fixed-size bloc
 - **Frame**: fixed-size block of physical memory (same size as a page)
 - **Page Table**: maps virtual page numbers → physical frame numbers
 
-```
-Virtual Address Space          Page Table           Physical Memory
-┌────────────────┐           ┌──────┬───────┐     ┌────────────────┐
-│   Page 0       │──────────▶│  0   │ Frame5│────▶│   Frame 0      │
-├────────────────┤           ├──────┼───────┤     ├────────────────┤
-│   Page 1       │──────────▶│  1   │ Frame2│──┐  │   Frame 1      │
-├────────────────┤           ├──────┼───────┤  │  ├────────────────┤
-│   Page 2       │──────────▶│  2   │ Frame8│  └─▶│   Frame 2      │
-├────────────────┤           ├──────┼───────┤     ├────────────────┤
-│   Page 3       │──────────▶│  3   │ Frame1│     │   Frame 3      │
-├────────────────┤           └──────┴───────┘     ├────────────────┤
-│   ...          │                                │   ...          │
-└────────────────┘                                ├────────────────┤
-                                                  │   Frame 5      │
-                                                  ├────────────────┤
-                                                  │   ...          │
-                                                  └────────────────┘
+```mermaid
+flowchart LR
+    subgraph V["Virtual Address Space"]
+      P0["Page 0"]
+      P1["Page 1"]
+      P2["Page 2"]
+      P3["Page 3"]
+    end
+    subgraph PT["Page Table"]
+      E0["0 → Frame 5"]
+      E1["1 → Frame 2"]
+      E2["2 → Frame 8"]
+      E3["3 → Frame 1"]
+    end
+    subgraph PM["Physical Memory"]
+      F5["Frame 5"]
+      F2["Frame 2"]
+      F8["Frame 8"]
+      F1["Frame 1"]
+    end
+    P0 --> E0 --> F5
+    P1 --> E1 --> F2
+    P2 --> E2 --> F8
+    P3 --> E3 --> F1
 ```
 
 ### Virtual Address Translation
 
-```
-Virtual Address (32-bit, 4 KB pages):
-┌────────────────────┬──────────────┐
-│  Page Number (20b) │ Offset (12b) │
-└────────────────────┴──────────────┘
-         │                    │
-         ▼                    │
-   ┌──────────┐              │
-   │Page Table │              │
-   │ Entry     │──▶ Frame #   │
-   └──────────┘      │       │
-                     ▼       ▼
-              ┌──────────┬──────────────┐
-              │ Frame #  │   Offset     │  = Physical Address
-              └──────────┴──────────────┘
+```mermaid
+flowchart LR
+    VA["Virtual Address (32-bit)<br/>Page Number (20b) · Offset (12b)"] -->|page number| PTE["Page Table Entry"]
+    PTE -->|Frame #| PA["Physical Address<br/>Frame # · Offset (12b)"]
+    VA -. offset copied unchanged .-> PA
 ```
 
 **Page Table Entry (PTE) fields:**
@@ -175,23 +150,11 @@ Virtual Address (32-bit, 4 KB pages):
 
 A flat page table for 32-bit addresses with 4 KB pages requires 2^20 entries × 4 bytes = **4 MB per process**. Multi-level page tables solve this by only allocating page table pages that are actually needed.
 
-```
-Two-Level Page Table (32-bit, 4 KB pages):
-
-Virtual Address:
-┌──────────┬──────────┬──────────────┐
-│ L1 (10b) │ L2 (10b) │ Offset (12b) │
-└──────────┴──────────┴──────────────┘
-      │          │            │
-      ▼          │            │
-┌──────────┐     │            │
-│ L1 Page  │     │            │
-│ Directory│     ▼            │
-│  Entry   │──▶┌──────────┐   │
-└──────────┘   │ L2 Page  │   │
-               │  Table   │   │
-               │  Entry   │──▶ Frame # + Offset = Physical Address
-               └──────────┘
+```mermaid
+flowchart LR
+    VA["Virtual Address (32-bit)<br/>L1 (10b) · L2 (10b) · Offset (12b)"] -->|L1 index| D["L1 Page Directory Entry"]
+    D -->|L2 index| T["L2 Page Table Entry"]
+    T -->|"Frame # + Offset"| PA["Physical Address"]
 ```
 
 **64-bit systems use 4 or 5 levels** (x86-64 uses 4-level: PML4 → PDPT → PD → PT).
@@ -202,56 +165,17 @@ A page table walk is **not** a linear scan of every entry. The virtual address i
 
 #### 2-Level Walk (32-bit, 4 KB pages)
 
+Translating virtual address `0x00403004` → split into `L1 = 0x001 (1)`, `L2 = 0x003 (3)`, `Offset = 0x004 (4)`, then walk the tree (each hop is a ~100 ns RAM read):
+
+```mermaid
+flowchart TD
+    VA["Virtual Address 0x00403004<br/>L1=1 · L2=3 · Offset=4"] --> CR3["CR3 → base of L1 table"]
+    CR3 -->|"L1 index 1 (RAM read ~100 ns)"| L1["L1 Page Directory<br/>idx 1 → L2 table @ 0x8000"]
+    L1 -->|"L2 index 3 (RAM read ~100 ns)"| L2["L2 Page Table @ 0x8000<br/>idx 3 → Frame 177"]
+    L2 -->|"Frame 177 × 4096 + 4"| PA["Physical Address 0x000B1004"]
 ```
-CPU needs to translate virtual address: 0x00403004
 
-Step 1: Split the virtual address into parts
-┌──────────────────────────────────────────────────────┐
-│  Virtual Address: 0x00403004  (binary below)         │
-│                                                      │
-│  ┌──────────┬──────────┬──────────────┐             │
-│  │ L1 index │ L2 index │   Offset     │             │
-│  │ (10 bits)│ (10 bits)│  (12 bits)   │             │
-│  ├──────────┼──────────┼──────────────┤             │
-│  │  0x001   │  0x003   │   0x004      │             │
-│  │  = 1     │  = 3     │   = 4        │             │
-│  └──────────┴──────────┴──────────────┘             │
-└──────────────────────────────────────────────────────┘
-
-Step 2: Walk the tree (each step is a RAM access)
-
-  CR3 register holds base address of L1 table
-  │
-  │  ┌─────────────────────────────┐
-  └─▶│ L1 Page Directory (in RAM)  │
-     │                             │
-     │ Index 0: → L2 table at 0x5000  │
-     │ Index 1: → L2 table at 0x8000  │  ◀── L1 index = 1, jump here
-     │ Index 2: → (not allocated)     │      (1st RAM read: ~100 ns)
-     │ ...                            │
-     └────────────────┬───────────────┘
-                      │
-                      ▼
-     ┌─────────────────────────────┐
-     │ L2 Page Table at 0x8000    │
-     │ (in RAM)                   │
-     │                            │
-     │ Index 0: → Frame 200      │
-     │ Index 1: → Frame 201      │
-     │ Index 2: → Frame 450      │
-     │ Index 3: → Frame 177      │  ◀── L2 index = 3, jump here
-     │ ...                        │      (2nd RAM read: ~100 ns)
-     └────────────────┬───────────┘
-                      │
-                      ▼
-              Frame number = 177
-
-Step 3: Combine frame number + offset
-
-  Physical address = Frame 177 × 4096 + offset 4
-                   = 0x000B1000 + 0x004
-                   = 0x000B1004
-```
+Each level is an **indexed array lookup**, not a search — the address bits select the entry directly.
 
 Each level is just an **array lookup by index** — not a search. The hardware uses bits from the virtual address as array indices.
 
@@ -259,53 +183,34 @@ Each level is just an **array lookup by index** — not a search. The hardware u
 
 Modern 64-bit systems use 4 levels, meaning **4 sequential RAM reads** per translation:
 
+Virtual address uses 48 of 64 bits, split into four 9-bit indices plus a 12-bit offset. Each level is a sequential RAM read:
+
+```mermaid
+flowchart LR
+    VA["Virtual Address (48 bits)<br/>PML4 · PDPT · PD · PT (9b each) · Offset (12b)"] --> CR3["CR3"]
+    CR3 -->|RAM read 1| A["PML4 Table"]
+    A -->|RAM read 2| B["PDPT Table"]
+    B -->|RAM read 3| C["Page Directory"]
+    C -->|RAM read 4| D["Page Table"]
+    D --> F["Frame"]
 ```
-Virtual Address (48 bits used out of 64):
-┌─────────┬─────────┬─────────┬─────────┬──────────────┐
-│ PML4    │  PDPT   │   PD    │   PT    │   Offset     │
-│ (9 bits)│ (9 bits)│ (9 bits)│ (9 bits)│  (12 bits)   │
-└─────────┴─────────┴─────────┴─────────┴──────────────┘
 
-CR3 ──▶ PML4 Table ──▶ PDPT Table ──▶ Page Directory ──▶ Page Table ──▶ Frame
-        (RAM read 1)   (RAM read 2)   (RAM read 3)      (RAM read 4)
-        ~100 ns        ~100 ns        ~100 ns           ~100 ns
-
-Total walk time: ~400 ns (4 × RAM access)
-vs. TLB hit:     ~1 ns
-
-That's 400× slower — this is why the TLB exists.
-```
+Total walk: **~400 ns** (4 × RAM access) vs. a **~1 ns** TLB hit — 400× slower, which is exactly why the TLB exists.
 
 #### Why Not a Flat Table?
 
-```
-Flat page table (one level):
-  48-bit address, 4 KB pages → 2³⁶ entries × 8 bytes = 512 GB per process
-  Impossible — the table would be larger than physical RAM.
+A **flat** table for a 48-bit address space (4 KB pages) would need 2³⁶ entries × 8 bytes = **512 GB per process** — larger than RAM. A **multi-level** table only allocates the branches a process actually uses; unallocated entries are null pointers, so nothing is wasted:
 
-Multi-level page table:
-  Only allocate L2/L3/L4 tables for address ranges the process actually uses.
-  A typical process uses maybe 100 MB → only a few hundred table pages needed.
-
-┌───────────────────────────────────────────────────────────┐
-│  PML4 (always allocated: 1 page = 4 KB)                  │
-│  ┌─────┬─────┬─────┬─────┬─────┬─────┐                 │
-│  │  0  │  1  │  2  │ ... │ 510 │ 511 │  512 entries    │
-│  │  ↓  │  ↓  │ null│     │null │  ↓  │                  │
-│  └──┬──┴──┬──┴─────┴─────┴─────┴──┬──┘                 │
-│     │     │                       │                      │
-│     ▼     ▼                       ▼                      │
-│   PDPT   PDPT                   PDPT  ← only 3 PDPT    │
-│   (4KB)  (4KB)                  (4KB)   pages allocated  │
-│     │                             │     (rest are null)  │
-│     ▼                             ▼                      │
-│    ...                           ...                     │
-│                                                          │
-│  Unallocated entries = null pointer → no memory wasted   │
-│  Process using 100 MB needs ~25 page table pages = 100KB │
-│  (vs. 512 GB for a flat table)                           │
-└───────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    PML4["PML4 (always allocated: 1 page = 4 KB)<br/>512 entries — most are null"]
+    PML4 -->|entry 0| A["PDPT (4 KB)"]
+    PML4 -->|entry 1| B["PDPT (4 KB)"]
+    PML4 -->|entry 511| C["PDPT (4 KB)"]
+    PML4 -. entries 2…510 .-> X["null → no memory allocated"]
 ```
+
+A process using ~100 MB needs only ~25 page-table pages (~100 KB), versus 512 GB for a flat table.
 
 #### Summary: Page Table Walk is NOT a Search
 
@@ -320,20 +225,12 @@ Multi-level page table:
 
 The TLB is a **hardware cache** for page table entries, avoiding the multi-level page table walk on every memory access.
 
-```
-CPU generates virtual address
-         │
-         ▼
-    ┌─────────┐     Hit (fast path: ~1 ns)
-    │   TLB   │────────────────────────────▶ Physical Address
-    │ (cache) │
-    └─────────┘
-         │ Miss (slow path: page table walk)
-         ▼
-    ┌──────────────┐
-    │  Page Table   │──▶ Frame number loaded into TLB
-    │  Walk (RAM)   │    (may take 10-100 ns)
-    └──────────────┘
+```mermaid
+flowchart TD
+    VA["CPU generates virtual address"] --> TLB{"TLB lookup"}
+    TLB -->|Hit · fast path ~1 ns| PA["Physical Address"]
+    TLB -->|Miss · slow path| Walk["Page Table Walk (RAM)<br/>~10–100 ns"]
+    Walk -->|frame number loaded into TLB| PA
 ```
 
 | Metric | Typical Value |
@@ -353,21 +250,11 @@ Standard 4 KB pages mean a 1 GB working set needs 262,144 TLB entries — far mo
 
 Segmentation divides memory into **variable-sized segments** based on logical divisions (code, data, stack, heap).
 
-```
-┌──────────┬──────────┐
-│ Segment# │  Offset  │  ← Logical address
-└──────────┴──────────┘
-      │
-      ▼
-┌──────────────────────┐
-│  Segment Table       │
-│  ┌───────┬────────┐  │
-│  │ Base  │ Limit  │  │  ← Trap if offset > limit
-│  └───────┴────────┘  │
-└──────────────────────┘
-      │
-      ▼
-  Base + Offset = Physical Address
+```mermaid
+flowchart TD
+    LA["Logical Address<br/>Segment # · Offset"] --> ST["Segment Table<br/>Base · Limit"]
+    ST -->|"offset &gt; limit"| Trap["Trap — segmentation fault"]
+    ST -->|"Base + Offset"| PA["Physical Address"]
 ```
 
 | Aspect | Paging | Segmentation |
@@ -386,18 +273,19 @@ Virtual memory allows processes to use more memory than physically available by 
 
 ### How It Works
 
-```
-Process A (thinks it has 4 GB)     Physical RAM (2 GB)        Disk (Swap)
-┌──────────────┐                   ┌──────────────┐          ┌──────────────┐
-│ Page 0 ──────│──────────────────▶│ Frame 3      │          │              │
-│ Page 1 ──────│──────────────────▶│ Frame 7      │          │              │
-│ Page 2 ──────│────────────────┐  │ Frame 1      │          │ Swapped Page │
-│ Page 3 ──────│─────(invalid)──│─▶│              │◄────────▶│ A:Page 3     │
-│ ...          │                │  │ ...          │          │ ...          │
-└──────────────┘                │  └──────────────┘          └──────────────┘
-                                │
-                                └─▶ Page Fault! Kernel loads
-                                   page from swap into a frame
+```mermaid
+flowchart LR
+    subgraph A["Process A (thinks it has 4 GB)"]
+      P0["Page 0"]
+      P1["Page 1"]
+      P2["Page 2"]
+      P3["Page 3"]
+    end
+    P0 --> F3["RAM Frame 3"]
+    P1 --> F7["RAM Frame 7"]
+    P2 --> F1["RAM Frame 1"]
+    P3 -->|valid bit = 0 → page fault| PF["Kernel loads page from swap into a free frame"]
+    PF --> SW["Disk swap: A : Page 3"]
 ```
 
 ### Demand Paging
@@ -427,17 +315,14 @@ When physical memory is full and a new page must be loaded, the OS must choose a
 
 Replace the **oldest** page in memory.
 
-```
-Reference string: 7, 0, 1, 2, 0, 3, 0, 4  (3 frames)
+Reference string `7, 0, 1, 2, 0, 3, 0, 4` with 3 frames:
 
-Step: 7    0    1    2    0    3    0    4
-     ┌──┐ ┌──┐ ┌──┐ ┌──┐ ┌──┐ ┌──┐ ┌──┐ ┌──┐
-     │7 │ │7 │ │7 │ │2 │ │2 │ │2 │ │2 │ │4 │
-     │  │ │0 │ │0 │ │0 │ │0 │ │3 │ │3 │ │3 │
-     │  │ │  │ │1 │ │1 │ │1 │ │1 │ │0 │ │0 │
-     └──┘ └──┘ └──┘ └──┘ └──┘ └──┘ └──┘ └──┘
-     Miss  Miss Miss Miss Hit  Miss Miss Miss  → 7 faults
-```
+| Reference → | 7 | 0 | 1 | 2 | 0 | 3 | 0 | 4 |
+|---|---|---|---|---|---|---|---|---|
+| **Frames in memory** | 7 | 7,0 | 7,0,1 | 0,1,2 | 0,1,2 | 1,2,3 | 2,3,0 | 3,0,4 |
+| **Result** | Miss | Miss | Miss | Miss | Hit | Miss | Miss | Miss |
+
+→ **7 faults** (evicts the oldest-inserted page each time).
 
 :::warning Belady's Anomaly
 FIFO can produce **more** page faults with **more** frames — counterintuitive! This is called Belady's anomaly. Stack-based algorithms (LRU, Optimal) don't suffer from this.
@@ -447,33 +332,27 @@ FIFO can produce **more** page faults with **more** frames — counterintuitive!
 
 Replace the page that **won't be used for the longest time** in the future. Impossible to implement in practice (requires future knowledge) — used as a benchmark.
 
-```
-Reference string: 7, 0, 1, 2, 0, 3, 0, 4  (3 frames)
+Reference string `7, 0, 1, 2, 0, 3, 0, 4` with 3 frames:
 
-Step: 7    0    1    2    0    3    0    4
-     ┌──┐ ┌──┐ ┌──┐ ┌──┐ ┌──┐ ┌──┐ ┌──┐ ┌──┐
-     │7 │ │7 │ │7 │ │2 │ │2 │ │2 │ │2 │ │2 │
-     │  │ │0 │ │0 │ │0 │ │0 │ │0 │ │0 │ │0 │
-     │  │ │  │ │1 │ │1 │ │1 │ │3 │ │3 │ │4 │
-     └──┘ └──┘ └──┘ └──┘ └──┘ └──┘ └──┘ └──┘
-     Miss  Miss Miss Miss Hit  Miss Hit  Miss  → 6 faults
-```
+| Reference → | 7 | 0 | 1 | 2 | 0 | 3 | 0 | 4 |
+|---|---|---|---|---|---|---|---|---|
+| **Frames in memory** | 7 | 7,0 | 7,0,1 | 0,1,2 | 0,1,2 | 0,2,3 | 0,2,3 | 0,2,4 |
+| **Result** | Miss | Miss | Miss | Miss | Hit | Miss | Hit | Miss |
+
+→ **6 faults** (evicts the page used furthest in the future — the theoretical minimum).
 
 ### LRU (Least Recently Used)
 
 Replace the page that **hasn't been used for the longest time** — uses past behavior to predict future.
 
-```
-Reference string: 7, 0, 1, 2, 0, 3, 0, 4  (3 frames)
+Reference string `7, 0, 1, 2, 0, 3, 0, 4` with 3 frames:
 
-Step: 7    0    1    2    0    3    0    4
-     ┌──┐ ┌──┐ ┌──┐ ┌──┐ ┌──┐ ┌──┐ ┌──┐ ┌──┐
-     │7 │ │7 │ │7 │ │2 │ │2 │ │2 │ │0 │ │0 │
-     │  │ │0 │ │0 │ │0 │ │0 │ │0 │ │3→0│ │4 │
-     │  │ │  │ │1 │ │1 │ │1 │ │3 │ │3 │ │3 │
-     └──┘ └──┘ └──┘ └──┘ └──┘ └──┘ └──┘ └──┘
-     Miss  Miss Miss Miss Hit  Miss Hit  Miss  → 6 faults
-```
+| Reference → | 7 | 0 | 1 | 2 | 0 | 3 | 0 | 4 |
+|---|---|---|---|---|---|---|---|---|
+| **Frames in memory** | 7 | 7,0 | 7,0,1 | 0,1,2 | 0,1,2 | 0,2,3 | 0,2,3 | 0,3,4 |
+| **Result** | Miss | Miss | Miss | Miss | Hit | Miss | Hit | Miss |
+
+→ **6 faults** (evicts the least-recently-used page).
 
 **Implementation:** Exact LRU requires hardware support (timestamp per access) or a doubly-linked list + hash map. Most systems use **approximations**.
 
@@ -481,22 +360,14 @@ Step: 7    0    1    2    0    3    0    4
 
 A practical approximation of LRU using a **reference bit** and a circular buffer.
 
-```
-Clock hand moves clockwise:
+The clock hand sweeps the circular buffer. `ref=1` pages get a second chance (cleared to 0 and skipped); the first `ref=0` page is evicted:
 
-        ┌───┐
-   ┌───▶│ A │ ref=1 → set to 0, skip
-   │    │   │
-   │    └───┘
-   │      ▲
-┌───┐   clock    ┌───┐
-│ D │   hand     │ B │ ref=0 → EVICT THIS
-│   │            │   │
-└───┘            └───┘
-         ┌───┐
-         │ C │ ref=1
-         │   │
-         └───┘
+```mermaid
+flowchart LR
+    A["A · ref=1<br/>→ clear to 0, skip"] --> B["B · ref=0<br/>→ EVICT"]
+    B --> C["C · ref=1"]
+    C --> D["D"]
+    D --> A
 ```
 
 1. Each page has a **reference bit** (set to 1 on access by hardware)
@@ -524,18 +395,9 @@ Replace the page with the **lowest access count**. Problem: a page heavily used 
 
 **Thrashing** occurs when a process spends more time **paging** (swapping to/from disk) than **executing**. The system becomes I/O-bound on swap, and CPU utilization collapses.
 
-```
-CPU Utilization
-     │          ╱╲
-     │        ╱    ╲
-     │      ╱        ╲
-     │    ╱            ╲──── Thrashing begins
-     │  ╱
-     │╱
-     └──────────────────────▶
-      Degree of Multiprogramming
-      (number of processes in memory)
-```
+CPU utilization rises with more processes — until memory is overcommitted and paging dominates, at which point it collapses (**thrashing**):
+
+<Chart type="line" height={280} title="CPU utilization vs degree of multiprogramming" x="processes" series={["CPU %"]} data={[{"processes":"1","CPU %":18},{"processes":"2","CPU %":42},{"processes":"3","CPU %":68},{"processes":"4","CPU %":88},{"processes":"5","CPU %":94},{"processes":"6","CPU %":62},{"processes":"7","CPU %":30},{"processes":"8","CPU %":14}]} />
 
 ### Causes
 - Too many processes competing for limited physical memory
@@ -546,13 +408,7 @@ CPU Utilization
 
 The **working set** W(t, Δ) is the set of pages referenced in the most recent Δ time units. If the OS ensures each process has enough frames for its working set, thrashing is avoided.
 
-```
-Working Set at time t with window Δ=5:
-Reference: ... 2, 6, 1, 5, 7, 7, 7, 7, 5, 1 ...
-                              ↑ (time t)
-                └──────Δ=5──────┘
-Working set = {1, 5, 7} → needs 3 frames minimum
-```
+With a window **Δ = 5** over the reference string `… 2, 6, 1, 5, 7, 7, 7, 7, 5, 1 …`, the working set at time *t* (the distinct pages among the last 5 references `5, 7, 7, 7, 7` … i.e. `1, 5, 7`) is **{1, 5, 7}** → needs **3 frames** minimum to avoid thrashing.
 
 ### Linux OOM Killer
 
@@ -612,25 +468,11 @@ close(fd);
 
 ### How malloc Works
 
-```
-Small allocations (&lt;128 KB typically):
-┌─────────────────────────────────────────┐
-│ malloc() → glibc allocator → brk()/sbrk()│
-│                                         │
-│ Program Break ──────▶ ┌──────────────┐  │
-│                       │  Heap space  │  │
-│    brk() moves ──────▶│  (grows up)  │  │
-│    break upward       └──────────────┘  │
-└─────────────────────────────────────────┘
-
-Large allocations (≥128 KB):
-┌─────────────────────────────────────────┐
-│ malloc() → glibc allocator → mmap()     │
-│                                         │
-│ Creates anonymous mapping in virtual    │
-│ address space (can be returned to OS    │
-│ immediately via munmap on free)         │
-└─────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    M["malloc(size)"] --> Q{"size ≥ 128 KB?"}
+    Q -->|no · small| Brk["glibc allocator → brk()/sbrk()<br/>moves the program break up; grows the heap"]
+    Q -->|yes · large| Mmap["glibc allocator → mmap()<br/>anonymous mapping; munmap() returns it to the OS on free"]
 ```
 
 **Key points:**

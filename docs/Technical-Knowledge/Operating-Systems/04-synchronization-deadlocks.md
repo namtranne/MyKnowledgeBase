@@ -41,16 +41,11 @@ A **critical section** is a code segment that accesses shared resources. The sol
 | **Progress** | If no thread is in the CS, a waiting thread must eventually enter |
 | **Bounded Waiting** | A thread cannot be starved indefinitely — there's a limit on how many times other threads enter before it |
 
-```
-Thread Lifecycle with Critical Section:
-
-  Entry Section      ← Acquire lock / check conditions
-  ──────────────
-  Critical Section   ← Access shared resources
-  ──────────────
-  Exit Section       ← Release lock
-  ──────────────
-  Remainder Section  ← Non-critical code
+```mermaid
+flowchart TD
+    E["Entry Section<br/>acquire lock / check conditions"] --> C["Critical Section<br/>access shared resources"]
+    C --> X["Exit Section<br/>release lock"]
+    X --> R["Remainder Section<br/>non-critical code"]
 ```
 
 ---
@@ -462,16 +457,12 @@ All **four** conditions must hold simultaneously for a deadlock to occur:
 | **3. No Preemption** | Resources cannot be forcibly taken away from a thread |
 | **4. Circular Wait** | A circular chain of threads, each waiting for a resource held by the next |
 
-```
-Circular Wait Example:
-
-  Thread A ──holds──▶ Resource 1
-     │                    ▲
-     │                    │
-   waits               holds
-     │                    │
-     ▼                    │
-  Resource 2 ◀──holds── Thread B
+```mermaid
+flowchart LR
+    A["Thread A"] -->|holds| R1["Resource 1"]
+    A -->|waits for| R2["Resource 2"]
+    B["Thread B"] -->|holds| R2
+    B -->|waits for| R1
 ```
 
 ### Deadlock Handling Strategies
@@ -521,17 +512,18 @@ The Banker's algorithm is mainly theoretical — real systems rarely know maximu
 
 ### Resource Allocation Graph
 
-```
-No Deadlock:                    Deadlock:
-                                
-  P1 ──req──▶ R1 ──assign──▶ P2     P1 ──req──▶ R1 ──assign──▶ P2
-                                      ▲                          │
-  (P1 wants R1, P2 holds R1,         │                         req
-   no cycle → no deadlock)            │                          │
-                                   assign                        ▼
-                                      │                         R2
-                                      P1 ◀──────────────────────┘
-                                   (Cycle → DEADLOCK!)
+```mermaid
+flowchart LR
+    subgraph ND["No deadlock — no cycle"]
+      n1["P1"] -->|requests| nr1["R1"]
+      nr1 -->|assigned to| n2["P2"]
+    end
+    subgraph DL["Deadlock — cycle"]
+      d1["P1"] -->|requests| dr1["R1"]
+      dr1 -->|assigned to| d2["P2"]
+      d2 -->|requests| dr2["R2"]
+      dr2 -->|assigned to| d1
+    end
 ```
 
 ---

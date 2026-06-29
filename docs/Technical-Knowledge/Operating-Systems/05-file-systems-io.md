@@ -12,20 +12,11 @@ File systems and I/O are where the OS meets persistent storage. Understanding th
 
 ## 1. File System Structure
 
-```
-┌─────────────────────────────────────────────────────┐
-│                     Disk Layout                      │
-├────────┬──────────┬──────────────┬──────────────────┤
-│  Boot  │  Super   │  Inode Table │    Data Blocks    │
-│ Block  │  Block   │              │                   │
-├────────┼──────────┼──────────────┼──────────────────┤
-│ Boot-  │ FS meta  │ File meta-   │ Actual file       │
-│ loader │ (size,   │ data (perms, │ contents          │
-│        │  block   │  size, block │                   │
-│        │  count,  │  pointers)   │                   │
-│        │  inode   │              │                   │
-│        │  count)  │              │                   │
-└────────┴──────────┴──────────────┴──────────────────┘
+```mermaid
+flowchart LR
+    Boot["Boot Block<br/>bootloader"] --> Super["Super Block<br/>FS metadata: size, block & inode counts"]
+    Super --> Inode["Inode Table<br/>file metadata: perms, size, block pointers"]
+    Inode --> Data["Data Blocks<br/>actual file contents"]
 ```
 
 | Component | Purpose |
@@ -42,26 +33,13 @@ File systems and I/O are where the OS meets persistent storage. Understanding th
 
 An **inode** (index node) stores all metadata about a file except its name.
 
-```
-┌──────────────────────────────────────────┐
-│                 Inode                     │
-├──────────────────────────────────────────┤
-│  File type (regular, dir, symlink, etc.) │
-│  Permissions (rwxrwxrwx)                 │
-│  Owner (uid) / Group (gid)               │
-│  Size (bytes)                            │
-│  Timestamps:                             │
-│    ├── atime (last access)               │
-│    ├── mtime (last modification)         │
-│    └── ctime (last metadata change)      │
-│  Link count (hard links)                 │
-│  Block count                             │
-├──────────────────────────────────────────┤
-│  Direct block pointers (12)        ──▶ Data blocks     │
-│  Single indirect pointer (1)       ──▶ Block of ptrs   │
-│  Double indirect pointer (1)       ──▶ Block of blocks  │
-│  Triple indirect pointer (1)       ──▶ Block of blocks  │
-└──────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    I["Inode<br/>type · perms (rwxrwxrwx) · uid/gid · size<br/>atime/mtime/ctime · link count · block count"]
+    I -->|12 direct pointers| D["Data blocks"]
+    I -->|single indirect| S["Block of pointers"]
+    I -->|double indirect| DB["Block of blocks of pointers"]
+    I -->|triple indirect| T["Block of blocks of blocks"]
 ```
 
 ### Block Pointer Calculation (4 KB blocks, 4-byte pointers)
@@ -103,15 +81,20 @@ total 8
 | **FAT (File Allocation Table)** | Linked list stored in a separate table | Random access via table lookup | Table can be large, still sequential for large files |
 | **Indexed (inode-based)** | Index block holds all block pointers | Fast random access | Index block overhead, multi-level for large files |
 
-```
-Contiguous:          Linked:              Indexed:
-┌──┬──┬──┬──┐       ┌──┐──▶┌──┐──▶┌──┐  ┌─────────┐
-│ 0│ 1│ 2│ 3│       │ 0│   │ 5│   │ 9│  │Index Blk│
-└──┴──┴──┴──┘       └──┘   └──┘   └──┘  ├─────────┤
- Start=0, Len=4      Each block has a    │0 → blk 4│
-                     next pointer        │1 → blk 7│
-                                         │2 → blk 2│
-                                         └─────────┘
+```mermaid
+flowchart TB
+    subgraph C["Contiguous"]
+      direction LR
+      c["blocks 0 · 1 · 2 · 3<br/>Start=0, Len=4"]
+    end
+    subgraph L["Linked"]
+      direction LR
+      l0["blk 0"] -->|next| l5["blk 5"] -->|next| l9["blk 9"]
+    end
+    subgraph X["Indexed"]
+      direction LR
+      idx["Index Block<br/>0 → blk 4 · 1 → blk 7 · 2 → blk 2"]
+    end
 ```
 
 ---
@@ -163,21 +146,13 @@ Crash Recovery:
 
 ### Buffering and Caching
 
-```
-Application
-     │
-     ▼
-┌──────────────┐
-│ User Buffer   │  Application-level buffer (e.g., BufferedWriter)
-├──────────────┤
-│ Page Cache    │  Kernel-level cache of disk blocks in RAM
-├──────────────┤
-│ Device Driver │  DMA transfers between RAM and disk controller
-├──────────────┤
-│ Disk Cache    │  On-disk controller cache (64-256 MB)
-├──────────────┤
-│ Disk Platters │  Persistent storage
-└──────────────┘
+```mermaid
+flowchart TD
+    App["Application"] --> UB["User Buffer<br/>app-level (e.g. BufferedWriter)"]
+    UB --> PC["Page Cache<br/>kernel cache of disk blocks in RAM"]
+    PC --> DD["Device Driver<br/>DMA between RAM and disk controller"]
+    DD --> DC["Disk Cache<br/>on-controller cache (64–256 MB)"]
+    DC --> DP["Disk Platters<br/>persistent storage"]
 ```
 
 | Concept | Description |
@@ -257,47 +232,34 @@ Like SCAN/C-SCAN but only go as far as the last request (don't go to disk end).
 
 ### RAID 0 — Striping (No Redundancy)
 
-```
-Disk 0    Disk 1
-┌──────┐  ┌──────┐
-│ A1   │  │ A2   │
-│ A3   │  │ A4   │
-│ A5   │  │ A6   │
-└──────┘  └──────┘
-Capacity: N disks × disk_size
-Fault tolerance: NONE (one disk fails → all data lost)
-Read/Write: Fastest
-```
+| Disk 0 | Disk 1 |
+|--------|--------|
+| A1 | A2 |
+| A3 | A4 |
+| A5 | A6 |
+
+**Capacity:** N × disk_size · **Fault tolerance:** none (one disk fails → all data lost) · **Read/Write:** fastest.
 
 ### RAID 1 — Mirroring
 
-```
-Disk 0    Disk 1
-┌──────┐  ┌──────┐
-│ A1   │  │ A1   │  (copy)
-│ A2   │  │ A2   │  (copy)
-│ A3   │  │ A3   │  (copy)
-└──────┘  └──────┘
-Capacity: disk_size (50% overhead)
-Fault tolerance: 1 disk failure
-Read: 2× (can read from either)
-Write: Same (must write to both)
-```
+| Disk 0 | Disk 1 (mirror) |
+|--------|-----------------|
+| A1 | A1 |
+| A2 | A2 |
+| A3 | A3 |
+
+**Capacity:** disk_size (50% overhead) · **Fault tolerance:** 1 disk failure · **Read:** 2× (either copy) · **Write:** same (must write both).
 
 ### RAID 5 — Striping with Distributed Parity
 
-```
-Disk 0    Disk 1    Disk 2    Disk 3
-┌──────┐  ┌──────┐  ┌──────┐  ┌──────┐
-│ A1   │  │ A2   │  │ A3   │  │ Ap   │  (parity for row A)
-│ B1   │  │ B2   │  │ Bp   │  │ B3   │  (parity rotates)
-│ C1   │  │ Cp   │  │ C2   │  │ C3   │
-│ Dp   │  │ D1   │  │ D2   │  │ D3   │
-└──────┘  └──────┘  └──────┘  └──────┘
-Capacity: (N-1) × disk_size
-Fault tolerance: 1 disk failure
-Write penalty: Must read old data + parity, compute new parity, write both
-```
+| Disk 0 | Disk 1 | Disk 2 | Disk 3 | |
+|--------|--------|--------|--------|---|
+| A1 | A2 | A3 | **Ap** | parity for row A |
+| B1 | B2 | **Bp** | B3 | parity rotates |
+| C1 | **Cp** | C2 | C3 | |
+| **Dp** | D1 | D2 | D3 | |
+
+**Capacity:** (N−1) × disk_size · **Fault tolerance:** 1 disk failure · **Write penalty:** read old data + parity, compute new parity, write both.
 
 ### RAID 6 — Double Parity
 
@@ -309,20 +271,14 @@ Fault tolerance: 2 simultaneous disk failures
 
 ### RAID 10 — Mirrored Stripes
 
-```
-┌───────────────────────────┐
-│          RAID 0 (Stripe)   │
-│  ┌──────────┐ ┌──────────┐│
-│  │ RAID 1   │ │ RAID 1   ││
-│  │ D0 │ D1  │ │ D2 │ D3  ││
-│  │ A1 │ A1  │ │ A2 │ A2  ││
-│  │ A3 │ A3  │ │ A4 │ A4  ││
-│  └──────────┘ └──────────┘│
-└───────────────────────────┘
-Capacity: 50% (N/2 × disk_size)
-Fault tolerance: 1 disk per mirror pair
-Best for: Databases (fast reads + writes + redundancy)
-```
+Stripe (RAID 0) **across** mirrored pairs (RAID 1):
+
+| Mirror pair 1 (D0 / D1) | Mirror pair 2 (D2 / D3) |
+|-------------------------|-------------------------|
+| A1 / A1 | A2 / A2 |
+| A3 / A3 | A4 / A4 |
+
+**Capacity:** 50% (N/2 × disk_size) · **Fault tolerance:** 1 disk per mirror pair · **Best for:** databases (fast reads + writes + redundancy).
 
 ### RAID Comparison Table
 
@@ -363,20 +319,11 @@ Best for: Databases (fast reads + writes + redundancy)
 
 ## 10. I/O Models
 
-```
-       Blocking         Non-Blocking       Async I/O
-       ────────         ────────────       ─────────
-App:   read() ───┐      read() ───┐       aio_read() ─┐
-                 │ wait           │ EAGAIN             │ returns
-                 │               │ (try again)        │ immediately
-                 │      poll/    │                    │
-                 │      retry    │                    │
-Kernel: ─────────┤     ─────────┤       ──────────────┤
-       data      │    data      │      data           │
-       ready     │    ready     │      ready → signal │
-                 │              │      or callback    │
-App:   returns ◀─┘    returns ◀─┘      callback() ◀──┘
-```
+| | Blocking | Non-blocking | Async I/O |
+|---|---|---|---|
+| **Call** | `read()` | `read()` → `EAGAIN` if not ready | `aio_read()` returns immediately |
+| **While waiting** | thread blocks until data ready | poll / retry in a loop | kernel works in the background |
+| **Completion** | returns when data ready | returns once a retry finds data | `callback()` (or signal) fires when ready |
 
 | Model | Blocks Thread? | When Data Ready | Use Case |
 |-------|---------------|----------------|----------|

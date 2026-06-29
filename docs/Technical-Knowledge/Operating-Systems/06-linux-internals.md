@@ -14,28 +14,24 @@ This chapter dives into Linux-specific internals that are frequently tested in s
 
 ### Monolithic vs Microkernel
 
+```mermaid
+flowchart TB
+    subgraph Mono["Monolithic Kernel (Linux)"]
+      direction TB
+      mu["User Space — App · App"]
+      mk["Kernel Space (ring 0)<br/>Scheduler · Memory Manager · File Systems<br/>Network Stack · Device Drivers · IPC"]
+      mu --> mk
+    end
+    subgraph Micro["Microkernel (Mach, QNX, L4)"]
+      direction TB
+      su["User Space — App · File System · Driver · Network"]
+      sk["Microkernel<br/>IPC · Scheduling · Basic Memory Mgmt"]
+      su --> sk
+    end
 ```
-Monolithic Kernel (Linux):          Microkernel (Mach, QNX, L4):
-┌──────────────────────────┐        ┌──────────────────────────┐
-│       User Space          │        │       User Space          │
-│  ┌──────┐  ┌──────────┐  │        │  ┌──────┐  ┌──────────┐  │
-│  │ App  │  │ App      │  │        │  │ App  │  │ File Sys │  │
-│  └──────┘  └──────────┘  │        │  └──────┘  │ Driver   │  │
-├══════════════════════════┤        │            │ Network  │  │
-│       Kernel Space        │        │            └──────────┘  │
-│  ┌──────────────────────┐│        ├══════════════════════════┤
-│  │ Scheduler            ││        │     Microkernel           │
-│  │ Memory Manager       ││        │  ┌──────────────────────┐│
-│  │ File Systems         ││        │  │ IPC, Scheduling      ││
-│  │ Network Stack        ││        │  │ Basic Memory Mgmt    ││
-│  │ Device Drivers       ││        │  └──────────────────────┘│
-│  │ IPC                  ││        └══════════════════════════┘
-│  └──────────────────────┘│
-└══════════════════════════┘
- Everything in kernel ring 0         Only essentials in kernel;
- Fast (no IPC overhead)              Services run in user space
- One bug can crash kernel            Better isolation, more IPC overhead
-```
+
+- **Monolithic:** everything in ring 0 → fast (no IPC overhead), but one bug can crash the whole kernel.
+- **Microkernel:** only essentials in the kernel; services run in user space → better isolation, more IPC overhead.
 
 | Aspect | Monolithic (Linux) | Microkernel |
 |--------|-------------------|-------------|
@@ -60,34 +56,12 @@ rmmod overlay                    # Remove module
 
 A system call is the interface between user-space programs and the kernel.
 
-```
-User Application
-      │
-      │  1. Sets syscall number in register (e.g., rax = __NR_write = 1)
-      │  2. Sets arguments in registers (rdi, rsi, rdx, ...)
-      │  3. Executes syscall instruction (x86-64) or int 0x80 (x86-32)
-      │
-      ▼
-┌─────────────────────────────────────────────┐
-│              CPU Mode Switch                 │
-│   User Mode (Ring 3) → Kernel Mode (Ring 0)  │
-│   Saves user-space registers to kernel stack │
-└─────────────────────────────────────────────┘
-      │
-      ▼
-┌─────────────────────────────────────────────┐
-│           Kernel Syscall Handler             │
-│   1. Lookup handler in sys_call_table[rax]   │
-│   2. Validate arguments                      │
-│   3. Execute kernel function (e.g., sys_write)│
-│   4. Return result in rax register           │
-└─────────────────────────────────────────────┘
-      │
-      ▼
-      CPU switches back to User Mode (Ring 3)
-      │
-      ▼
-User Application continues with return value
+```mermaid
+flowchart TD
+    A["User application<br/>1. syscall # in rax (e.g. __NR_write = 1)<br/>2. args in rdi, rsi, rdx, …<br/>3. executes syscall instruction (x86-64)"] --> B["CPU mode switch<br/>Ring 3 → Ring 0<br/>save user registers to kernel stack"]
+    B --> C["Kernel syscall handler<br/>1. lookup sys_call_table[rax]<br/>2. validate arguments<br/>3. run kernel fn (e.g. sys_write)<br/>4. result in rax"]
+    C --> D["CPU switches back to Ring 3"]
+    D --> E["User application continues with return value"]
 ```
 
 ### Cost of a System Call
@@ -361,24 +335,18 @@ unshare --pid --fork --mount-proc /bin/bash
 
 Containers are **not VMs** — they're processes with isolated views of the system using **cgroups + namespaces + union filesystem**.
 
-```
-┌─────────────────────────────────────────────────┐
-│                   Host Kernel                    │
-│                                                  │
-│  ┌──────────────────┐  ┌──────────────────┐     │
-│  │  Container A      │  │  Container B      │     │
-│  │  ┌──────────────┐│  │  ┌──────────────┐│     │
-│  │  │  App Process  ││  │  │  App Process  ││     │
-│  │  └──────────────┘│  │  └──────────────┘│     │
-│  │  PID namespace    │  │  PID namespace    │     │
-│  │  Net namespace    │  │  Net namespace    │     │
-│  │  Mount namespace  │  │  Mount namespace  │     │
-│  │  cgroup limits    │  │  cgroup limits    │     │
-│  │  Union FS (overlay)│ │  Union FS (overlay)│    │
-│  └──────────────────┘  └──────────────────┘     │
-│                                                  │
-│                  Shared Kernel                    │
-└─────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph Host["Host Kernel (shared by all containers)"]
+      subgraph CA["Container A"]
+        pa["App Process"]
+        na["PID · Net · Mount namespaces<br/>cgroup limits · OverlayFS"]
+      end
+      subgraph CB["Container B"]
+        pb["App Process"]
+        nb["PID · Net · Mount namespaces<br/>cgroup limits · OverlayFS"]
+      end
+    end
 ```
 
 | Component | Role |
@@ -531,28 +499,16 @@ sysctl net.core.wmem_max=16777216      # Max socket send buffer
 
 ### Performance Investigation Checklist
 
-```
-Problem: System is slow
-         │
-         ├─▶ CPU bound?
-         │   └── top/htop → look for %CPU > 90%
-         │       perf top → find hot functions
-         │       perf record → generate flame graph
-         │
-         ├─▶ Memory bound?
-         │   └── free -h → check available memory
-         │       vmstat 1 → check si/so (swap in/out)
-         │       dmesg → check for OOM kills
-         │
-         ├─▶ I/O bound?
-         │   └── iostat -x 1 → check %util, await, iops
-         │       iotop → find I/O-heavy processes
-         │       check disk queue depth (avgqu-sz)
-         │
-         └─▶ Network bound?
-             └── ss -s → connection counts
-                 sar -n DEV 1 → bandwidth per interface
-                 tcpdump/wireshark → packet analysis
+```mermaid
+flowchart TD
+    P["System is slow"] --> C{"CPU bound?"}
+    P --> M{"Memory bound?"}
+    P --> I{"I/O bound?"}
+    P --> N{"Network bound?"}
+    C --> Ct["top / htop (%CPU &gt; 90)<br/>perf top → hot functions<br/>perf record → flame graph"]
+    M --> Mt["free -h<br/>vmstat 1 → si/so (swap)<br/>dmesg → OOM kills"]
+    I --> It["iostat -x 1 → %util, await, iops<br/>iotop → heavy processes<br/>queue depth (avgqu-sz)"]
+    N --> Nt["ss -s → connection counts<br/>sar -n DEV 1 → bandwidth<br/>tcpdump / wireshark"]
 ```
 
 ---

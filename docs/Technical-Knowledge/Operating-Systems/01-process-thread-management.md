@@ -31,20 +31,22 @@ Chrome deliberately uses **multi-process architecture** — each tab is a separa
 
 Every process has its own **page table** — a kernel data structure that maps virtual addresses to physical memory frames. This is what gives each process the illusion of having its own private address space.
 
-```
-Process A's view of memory            Process B's view of memory
-┌────────────────────┐                ┌────────────────────┐
-│ 0x0000: code       │                │ 0x0000: code       │  ← Same virtual
-│ 0x1000: heap       │                │ 0x1000: heap       │    addresses, but
-│ 0x7FFF: stack      │                │ 0x7FFF: stack      │    different physical
-└────────┬───────────┘                └────────┬───────────┘    frames
-         │                                     │
-    Page Table A                          Page Table B
-   ┌─────────────┐                       ┌─────────────┐
-   │ 0x0→Frame 42│                       │ 0x0→Frame 99│
-   │ 0x1→Frame 43│                       │ 0x1→Frame 71│
-   │ 0x7→Frame 80│                       │ 0x7→Frame 55│
-   └─────────────┘                       └─────────────┘
+Both processes use the **same virtual addresses**, but their page tables map them to **different physical frames**:
+
+```mermaid
+flowchart TB
+    subgraph A["Process A — virtual view"]
+      A0["0x0000: code"]
+      A1["0x1000: heap"]
+      A7["0x7FFF: stack"]
+    end
+    subgraph B["Process B — virtual view"]
+      B0["0x0000: code"]
+      B1["0x1000: heap"]
+      B7["0x7FFF: stack"]
+    end
+    A --> PTA["Page Table A<br/>0x0→Frame 42 · 0x1→Frame 43 · 0x7→Frame 80"]
+    B --> PTB["Page Table B<br/>0x0→Frame 99 · 0x1→Frame 71 · 0x7→Frame 55"]
 ```
 
 When the OS switches from Process A to Process B, it must **swap the active page table** by loading Process B's page table base address into the CPU's **CR3 register** (on x86). After this, every memory access by the CPU goes through the new page table, so Process B sees its own memory — not Process A's.
@@ -55,32 +57,15 @@ When the OS switches from Process A to Process B, it must **swap the active page
 
 The **TLB (Translation Lookaside Buffer)** is a small, extremely fast hardware cache inside the CPU that stores recent virtual-to-physical address translations. Without it, every memory access would require a slow multi-level page table walk through RAM.
 
-```
-What happens on a process switch:
-
-  ┌─────────────────────────────────────────────────────────────────┐
-  │ BEFORE SWITCH (Process A running)                               │
-  │                                                                 │
-  │   TLB Cache (fast lookups, ~1 ns):                             │
-  │   ┌──────────────────────────────────────────────┐             │
-  │   │ virt 0x1000 → phys Frame 42  (Process A)     │             │
-  │   │ virt 0x2000 → phys Frame 43  (Process A)     │             │
-  │   │ virt 0x7FF0 → phys Frame 80  (Process A)     │             │
-  │   └──────────────────────────────────────────────┘             │
-  │                                                                 │
-  │ AFTER SWITCH (Process B starts running)                         │
-  │                                                                 │
-  │   1. CR3 loaded with Process B's page table base               │
-  │   2. TLB is FLUSHED — all cached entries invalidated           │
-  │   3. Every memory access by Process B now causes a TLB miss    │
-  │   4. Each miss triggers a page table walk (~10–100 ns)         │
-  │   5. TLB gradually "warms up" as Process B runs                │
-  │                                                                 │
-  │   TLB Cache (after flush — cold):                              │
-  │   ┌──────────────────────────────────────────────┐             │
-  │   │ (empty — all entries invalidated)             │             │
-  │   └──────────────────────────────────────────────┘             │
-  └─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    A["Process A running<br/>TLB WARM (~1 ns lookups)<br/>0x1000→F42 · 0x2000→F43 · 0x7FF0→F80"] --> S["Context switch to Process B"]
+    S --> C1["1 · CR3 ← Process B page-table base"]
+    C1 --> C2["2 · TLB FLUSHED — all entries invalidated"]
+    C2 --> C3["3 · Every B access → TLB miss"]
+    C3 --> C4["4 · Each miss → page-table walk (~10–100 ns)"]
+    C4 --> C5["5 · TLB gradually warms up as B runs"]
+    C2 --> Cold["TLB after flush: empty / cold"]
 ```
 
 **Why flush?** Because TLB entries from Process A map Process A's virtual addresses to Process A's physical frames. If Process B reused those entries, virtual address `0x1000` would resolve to Process A's physical memory — a catastrophic security and correctness violation.
@@ -100,24 +85,18 @@ Modern x86 CPUs support **Process-Context Identifiers (PCID)**, which tag each T
 
 Because each process has its **own virtual address space** (enforced by separate page tables), one process cannot directly read or write another process's memory. This isolation is intentional — it prevents bugs in one process from corrupting another and provides a security boundary.
 
-```
-Thread communication (easy):        Process communication (requires IPC):
-┌────────────────────────┐          ┌──────────┐     ┌──────────┐
-│      Process A         │          │ Process A│     │ Process B│
-│  ┌──────┐ ┌──────┐    │          │          │     │          │
-│  │ T1   │ │ T2   │    │          │ heap     │     │ heap     │
-│  │      │ │      │    │          │ (own)    │     │ (own)    │
-│  │ ptr→─┼─┼→heap │    │          └────┬─────┘     └────┬─────┘
-│  │      │ │      │    │               │                │
-│  └──────┘ └──────┘    │               │   ┌────────┐   │
-│      shared heap      │               └──▶│  IPC   │◀──┘
-│      shared globals   │                   │ (pipe, │
-└────────────────────────┘                  │ socket,│
-                                            │ shm)   │
- Threads share the same address              └────────┘
- space — T1 can directly read            Processes need the kernel
- a variable T2 wrote. Fast,             to mediate. Slower, but
- but risks race conditions.             provides isolation.
+**Threads** share one address space (fast, but risks race conditions). **Processes** are isolated and must go through the kernel via IPC (slower, but safe):
+
+```mermaid
+flowchart TB
+    subgraph PA["Process A (threads share memory)"]
+      T1["T1"] --> Heap["shared heap / globals"]
+      T2["T2"] --> Heap
+    end
+    subgraph IPCG["Process communication (requires IPC)"]
+      HA["Process A heap (own)"] --> IPC["IPC<br/>(pipe · socket · shm)"]
+      HB["Process B heap (own)"] --> IPC
+    end
 ```
 
 The five main IPC mechanisms, ordered by typical use case:
@@ -140,19 +119,14 @@ While threads can share memory directly, this introduces **race conditions**, **
 
 A process transitions through these states during its lifecycle:
 
-```
-                    ┌─────────────────────────────┐
-                    │                             │
-                    ▼                             │
-  ┌─────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
-  │ New │───▶│  Ready   │───▶│ Running  │───▶│Terminated│
-  └─────┘    └──────────┘    └──────────┘    └──────────┘
-                  ▲                │
-                  │                │
-                  │          ┌──────────┐
-                  └──────────│ Waiting  │
-                             │(Blocked) │
-                             └──────────┘
+```mermaid
+flowchart LR
+    New(["New"]) -->|admitted| Ready(["Ready"])
+    Ready -->|dispatch| Running(["Running"])
+    Running -->|preempted| Ready
+    Running -->|I/O or wait| Waiting(["Waiting / Blocked"])
+    Waiting -->|event complete| Ready
+    Running -->|exit| Terminated(["Terminated"])
 ```
 
 | State | Description |
@@ -180,26 +154,19 @@ A process transitions through these states during its lifecycle:
 
 The PCB (also called Task Control Block in Linux: `task_struct`) is the kernel data structure that represents a process.
 
-```
-┌──────────────────────────────────┐
-│       Process Control Block      │
-├──────────────────────────────────┤
-│  PID (Process ID)                │
-│  Process State (ready/running/…) │
-│  Program Counter (PC)            │
-│  CPU Registers                   │
-│  CPU Scheduling Info (priority)  │
-│  Memory Management Info          │
-│    ├── Page table base register  │
-│    ├── Segment table             │
-│    └── Memory limits             │
-│  I/O Status (open file table)    │
-│  Accounting Info (CPU time used) │
-│  Parent PID / Child list         │
-│  Signal handlers                 │
-│  Credentials (uid, gid)         │
-└──────────────────────────────────┘
-```
+| PCB Field | Detail |
+|-----------|--------|
+| **PID** | Process ID |
+| **Process State** | ready / running / waiting … |
+| **Program Counter** | address of next instruction |
+| **CPU Registers** | saved register file |
+| **CPU Scheduling Info** | priority, queue pointers |
+| **Memory Management** | page-table base register · segment table · memory limits |
+| **I/O Status** | open file table |
+| **Accounting Info** | CPU time used |
+| **Parent PID / Child list** | process hierarchy |
+| **Signal handlers** | registered handlers |
+| **Credentials** | uid, gid |
 
 In Linux, inspect a running process's PCB via `/proc/<pid>/`:
 ```bash
@@ -243,51 +210,17 @@ A **context switch** is the mechanism by which the OS saves the state of the cur
 
 The direct cost of a context switch (saving/restoring registers) is only ~1–10 μs. But the **indirect cost** — caused by destroying cache warmth — can add 10–1000 μs of slowdown. This is the dominant cost and is often misunderstood.
 
-```
-Process A is running on Core 0
-┌───────────────────────────────────────────────────────────────────┐
-│ Core 0                                                           │
-│                                                                   │
-│  L1 Cache (32 KB):  [A's hot variables, A's current function]    │  ← ~1 ns access
-│  L2 Cache (256 KB): [A's recent data, A's call stack frames]     │  ← ~4 ns access
-│  L3 Cache (8 MB):   [A's working set — arrays, objects, etc.]    │  ← ~10 ns access
-│                                                                   │
-│  All 3 cache levels are "warm" — filled with data Process A      │
-│  is actively using. Cache hit rate: >95%                         │
-└───────────────────────────────────────────────────────────────────┘
-
-                    ⬇ Context switch to Process B ⬇
-
-┌───────────────────────────────────────────────────────────────────┐
-│ Core 0                                                           │
-│                                                                   │
-│  L1 Cache: [still A's data — useless to B]                       │  MISS → go to L2
-│  L2 Cache: [still A's data — useless to B]                       │  MISS → go to L3
-│  L3 Cache: [still A's data — useless to B]                       │  MISS → go to RAM
-│                                                                   │
-│  Process B must fetch everything from RAM at ~100 ns per access. │
-│  Until caches refill with B's data, every memory access is       │
-│  10–100× slower than normal.                                     │
-│                                                                   │
-│  This "cold cache" penalty lasts for thousands of memory          │
-│  accesses until B's working set is loaded into cache.            │
-└───────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    A["Core 0 — Process A running<br/>L1 (32 KB) ~1 ns · L2 (256 KB) ~4 ns · L3 (8 MB) ~10 ns<br/>all WARM — hit rate &gt;95%"] -->|context switch to B| B["Core 0 — Process B running<br/>L1/L2/L3 still hold A's data → every access MISSES<br/>fetch from RAM ~100 ns (10–100× slower)"]
+    B --> C["Cold-cache penalty lasts thousands of accesses<br/>until B's working set refills the cache lines"]
 ```
 
 The timeline of a typical context switch:
 
-```
-Time ──────────────────────────────────────────────────────────────▶
-
-│◀ 1–10 μs ▶│◀──────────── 10–1000 μs ──────────────▶│
-│            │                                        │
-│  Direct    │     Indirect cost (cold cache)         │
-│  cost:     │                                        │
-│  save/     │  Every memory access misses cache      │
-│  restore   │  and goes to RAM. Gradually warms up   │
-│  registers │  as B's data fills the cache lines.    │
-│  + TLB     │                                        │
-│  flush     │  This is where the REAL cost lives.    │
+```mermaid
+flowchart LR
+    D["Direct cost · 1–10 μs<br/>save/restore registers + TLB flush"] --> I["Indirect cost · 10–1000 μs<br/>cold cache: every access misses → RAM,<br/>warms up as B's data fills the lines<br/><b>this is where the real cost lives</b>"]
 ```
 
 | Cost Component | Latency | What Happens |
@@ -328,36 +261,26 @@ The trade-off: you dedicate entire CPU cores to a single task (no sharing). This
 
 A **kernel thread** (KLT) is a thread that the OS kernel knows about and schedules directly. When you create a `pthread` in C or a `Thread` in Java, the OS creates a corresponding kernel-level scheduling entity. The kernel's scheduler treats each kernel thread as an independent unit that can be assigned to any available CPU core.
 
-```
-Your Java application (1 process, 4 threads):
+Java app: 1 process, 4 threads. Each user thread maps 1:1 to a kernel thread (`task_struct`); the kernel scheduler places each on a core independently. Thread 4 is blocked on I/O, so only it sleeps:
 
-┌───────────────────────────────────────────────────────────────┐
-│  USER SPACE                                                   │
-│                                                               │
-│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐        │
-│  │ Thread 1│  │ Thread 2│  │ Thread 3│  │ Thread 4│        │
-│  │ (main)  │  │ (worker)│  │ (worker)│  │  (I/O)  │        │
-│  └────┬────┘  └────┬────┘  └────┬────┘  └────┬────┘        │
-│       │            │            │            │               │
-├───────┼────────────┼────────────┼────────────┼───────────────┤
-│  KERNEL SPACE      │            │            │               │
-│       │            │            │            │               │
-│       ▼            ▼            ▼            ▼               │
-│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐        │
-│  │  KLT 1  │  │  KLT 2  │  │  KLT 3  │  │  KLT 4  │        │
-│  │ (task_  │  │ (task_  │  │ (task_  │  │ (task_  │        │
-│  │ struct) │  │ struct) │  │ struct) │  │ struct) │        │
-│  └────┬────┘  └────┬────┘  └────┬────┘  └────┬────┘        │
-│       │            │            │            │               │
-│       ▼            ▼            ▼            ▼               │
-│   ┌────────┐  ┌────────┐  ┌────────┐   (blocked on          │
-│   │ Core 0 │  │ Core 1 │  │ Core 2 │    disk read,          │
-│   └────────┘  └────────┘  └────────┘    not on any core)     │
-│                                                               │
-│  Kernel scheduler independently assigns each KLT to a core.  │
-│  Thread 4 is blocked on I/O — kernel suspends just that       │
-│  thread while the other 3 keep running.                       │
-└───────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph US["User space"]
+      T1["Thread 1 (main)"]
+      T2["Thread 2 (worker)"]
+      T3["Thread 3 (worker)"]
+      T4["Thread 4 (I/O)"]
+    end
+    subgraph KS["Kernel space"]
+      K1["KLT 1 (task_struct)"]
+      K2["KLT 2 (task_struct)"]
+      K3["KLT 3 (task_struct)"]
+      K4["KLT 4 (task_struct)"]
+    end
+    T1 --> K1 --> C0["Core 0"]
+    T2 --> K2 --> C1["Core 1"]
+    T3 --> K3 --> C2["Core 2"]
+    T4 --> K4 --> Blk["blocked on disk read<br/>(not on any core)"]
 ```
 
 **Why "kernel" thread?** Because crossing into kernel space is required for key operations:
@@ -406,22 +329,28 @@ So a "kernel thread" in Linux is just a `task_struct` that shares its parent's m
 
 ### Multi-threading Models
 
+```mermaid
+flowchart TB
+    subgraph M1["Many-to-One (M:1)"]
+      direction TB
+      a["T1 · T2 · T3 · T4"] --> ak["K1 (one kernel thread)"]
+    end
+    subgraph O1["One-to-One (1:1)"]
+      direction TB
+      b1["T1"] --> bk1["K1"]
+      b2["T2"] --> bk2["K2"]
+      b3["T3"] --> bk3["K3"]
+      b4["T4"] --> bk4["K4"]
+    end
+    subgraph MN["Many-to-Many (M:N)"]
+      direction TB
+      c["T1 · T2 · T3 · T4"] --> ck["K1 · K2 · K3"]
+    end
 ```
-Many-to-One (M:1)          One-to-One (1:1)          Many-to-Many (M:N)
-┌────────────────┐       ┌────────────────┐       ┌────────────────┐
-│ User Threads   │       │ User Threads   │       │ User Threads   │
-│  T1 T2 T3 T4  │       │ T1  T2  T3  T4 │       │  T1 T2 T3 T4  │
-│   \  |  |  /  │       │  |   |   |   |  │       │   \  |  / |   │
-│    \ | | /    │       │  |   |   |   |  │       │    \ | /  |   │
-│     \|/|/     │       │  |   |   |   |  │       │     \|/   |   │
-│      K1       │       │ K1  K2  K3  K4  │       │   K1  K2  K3  │
-│ Kernel Thread │       │ Kernel Threads  │       │ Kernel Threads │
-└────────────────┘       └────────────────┘       └────────────────┘
-  - Fast switches          - True parallelism       - Best of both
-  - No parallelism         - Higher overhead         - Complex to implement
-  - One block = all        - Scalable               - Go goroutines
-    block                                           - Erlang processes
-```
+
+- **M:1** — fast switches, no parallelism, one block blocks all.
+- **1:1** — true parallelism, higher overhead, scalable.
+- **M:N** — best of both, complex to implement (Go goroutines, Erlang processes).
 
 | Model | Parallelism | Blocking Impact | Overhead | Example |
 |-------|------------|----------------|----------|---------|
@@ -433,15 +362,11 @@ Many-to-One (M:1)          One-to-One (1:1)          Many-to-Many (M:N)
 
 ## 6. Concurrency vs Parallelism
 
-```
-Concurrency (single core):              Parallelism (multi-core):
-┌──────────────────────────┐            ┌──────────────────────────┐
-│ Core 0                   │            │ Core 0: ████████████████ │
-│ ██T1██ ██T2██ ██T1██     │            │ Core 1: ████████████████ │
-│ Tasks interleaved        │            │ Core 2: ████████████████ │
-│ (only one runs at a time)│            │ Tasks truly simultaneous │
-└──────────────────────────┘            └──────────────────────────┘
-```
+| | Concurrency (single core) | Parallelism (multi-core) |
+|---|---|---|
+| **Execution** | tasks interleaved — only one runs at a time | tasks run at the exact same instant |
+| **Cores** | Core 0 time-slices: `T1 · T2 · T1 …` | Core 0, Core 1, Core 2 each run a task |
+| **Idea** | dealing with many things at once | doing many things at once |
 
 | Concept | Definition | Requires Multiple Cores? |
 |---------|-----------|------------------------|
@@ -506,30 +431,19 @@ int main() {
 
 After `fork()`, the child does **not** immediately copy the parent's entire address space. Instead:
 
-```
-Before fork():
-┌─────────────┐
-│   Parent     │
-│  Page Table  │──▶ Physical Pages [A][B][C][D]
-└─────────────┘
-
-After fork() (COW):
-┌─────────────┐
-│   Parent     │──┐
-│  Page Table  │  │
-└─────────────┘  ├──▶ Physical Pages [A][B][C][D]  (shared, read-only)
-┌─────────────┐  │
-│   Child      │──┘
-│  Page Table  │
-└─────────────┘
-
-After child writes to page B:
-┌─────────────┐
-│   Parent     │──▶ [A][B][C][D]   (B is still original)
-└─────────────┘
-┌─────────────┐
-│   Child      │──▶ [A][B'][C][D]  (B' is a new copy with modifications)
-└─────────────┘
+```mermaid
+flowchart TB
+    subgraph S1["Before fork()"]
+      P0["Parent page table"] --> G0["Pages [A][B][C][D]"]
+    end
+    subgraph S2["After fork() — COW"]
+      P1["Parent page table"] --> Gs["Pages [A][B][C][D]<br/>shared, read-only"]
+      C1["Child page table"] --> Gs
+    end
+    subgraph S3["After child writes page B"]
+      P2["Parent"] --> Gp["[A][B][C][D]<br/>(B unchanged)"]
+      C2["Child"] --> Gc["[A][B'][C][D]<br/>(B' = private copy)"]
+    end
 ```
 
 1. Both parent and child share the **same physical pages**, marked **read-only**

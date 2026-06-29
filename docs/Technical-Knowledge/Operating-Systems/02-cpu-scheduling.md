@@ -186,19 +186,7 @@ Gantt Chart (q=4):
 | **Too large** (e.g., 100 ms) | Degenerates to FCFS → poor response time |
 | **Sweet spot** | Typically 10–100 ms; ~80% of bursts should complete within one quantum |
 
-```
-Context Switch Overhead vs Quantum Size:
-
-Overhead │
-  High   │ ╲
-         │   ╲
-         │     ╲
-         │       ╲──────────────────
-  Low    │
-         └───────────────────────────
-           1ms  10ms  50ms  100ms
-                  Quantum Size
-```
+<Chart type="line" height={260} title="Context-switch overhead vs quantum size" x="quantum" series={["overhead %"]} data={[{"quantum":"1ms","overhead %":95},{"quantum":"10ms","overhead %":42},{"quantum":"50ms","overhead %":14},{"quantum":"100ms","overhead %":7}]} />
 
 ---
 
@@ -206,16 +194,10 @@ Overhead │
 
 Processes are permanently assigned to a queue based on type. Each queue has its own algorithm.
 
-```
-High Priority
-┌──────────────────────────────────┐
-│  System processes     (RR, q=8)  │  ← Highest priority
-├──────────────────────────────────┤
-│  Interactive processes (RR, q=16)│
-├──────────────────────────────────┤
-│  Batch processes      (FCFS)     │  ← Lowest priority
-└──────────────────────────────────┘
-Low Priority
+```mermaid
+flowchart TB
+    A["System processes · RR q=8<br/>HIGHEST priority"] --> B["Interactive processes · RR q=16"]
+    B --> C["Batch processes · FCFS<br/>LOWEST priority"]
 ```
 
 - Fixed-priority preemptive scheduling between queues
@@ -228,14 +210,10 @@ Low Priority
 
 The most important general-purpose scheduler. Processes can **move between queues** based on behavior.
 
-```
-┌──────────────────────────────────────┐
-│  Queue 0: RR with q=8    (highest)   │  ← New processes start here
-├──────────────────────────────────────┤
-│  Queue 1: RR with q=16              │  ← Demoted if uses full quantum
-├──────────────────────────────────────┤
-│  Queue 2: FCFS            (lowest)   │  ← CPU-bound processes sink here
-└──────────────────────────────────────┘
+```mermaid
+flowchart TB
+    Q0["Queue 0 · RR q=8 (highest)<br/>new processes start here"] -->|uses full quantum → demote| Q1["Queue 1 · RR q=16"]
+    Q1 -->|uses full quantum → demote| Q2["Queue 2 · FCFS (lowest)<br/>CPU-bound processes sink here"]
 ```
 
 **Rules:**
@@ -310,17 +288,10 @@ Linux 6.6 (2023) replaced CFS with **EEVDF** (Earliest Eligible Virtual Deadline
 
 ### Scheduling Classes (Priority Order)
 
-```
-┌─────────────────────────────────────────────┐
-│  SCHED_DEADLINE   (Earliest Deadline First)  │  ← Highest priority
-├─────────────────────────────────────────────┤
-│  SCHED_FIFO       (Real-time FIFO)           │
-│  SCHED_RR         (Real-time Round Robin)    │
-├─────────────────────────────────────────────┤
-│  SCHED_NORMAL/OTHER  (CFS, default)         │
-│  SCHED_BATCH      (CPU-intensive batch)      │
-│  SCHED_IDLE       (very low priority)        │  ← Lowest priority
-└─────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    D["SCHED_DEADLINE · Earliest Deadline First<br/>HIGHEST priority"] --> F["SCHED_FIFO · SCHED_RR<br/>real-time"]
+    F --> N["SCHED_NORMAL/OTHER (CFS, default)<br/>SCHED_BATCH · SCHED_IDLE<br/>LOWEST priority"]
 ```
 
 ### Useful Commands

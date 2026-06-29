@@ -8,7 +8,7 @@
     "build": "vite build && cp dist/index.html dist/404.html && touch dist/.nojekyll",
     "preview": "vite preview --host 0.0.0.0",
     "serve": "vite preview --host 0.0.0.0",
-    "deploy": "npm run build && git checkout gh-pages && find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'node_modules' ! -name 'dist' -exec rm -rf {} + && cp -r dist/* . && touch .nojekyll && git add -A && git commit -m 'Deploy' && git push origin gh-pages && git checkout main"
+    "deploy": "npm run build && DEPLOY_URL=$(git remote get-url origin) && cd dist && git init -q && git add -A && git -c user.email=deploy@local -c user.name=deploy commit -qm Deploy && git push -f \"$DEPLOY_URL\" HEAD:gh-pages && cd .. && rm -rf dist/.git"
   },
   "dependencies": {
     "@mdx-js/mdx": "^3.1.0",
