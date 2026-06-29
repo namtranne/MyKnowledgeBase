@@ -14,7 +14,12 @@ const categoryModules = import.meta.glob('/docs/**/_category_.json', {
 });
 
 // Topics that get reading-progress tracking.
-const TRACKED_TOP = new Set(['Technical-Knowledge', 'Books']);
+const TRACKED_TOP = new Set([
+  'Technical-Knowledge',
+  'Books',
+  'DSA-Foundations',
+  'DSA-Training',
+]);
 
 function prettify(name) {
   return name

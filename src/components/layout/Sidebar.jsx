@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { tree } from '../../content/loader.js';
 import { useProgress } from '../progress/ProgressContext.jsx';
+import NavMenu from './NavMenu.jsx';
 
 // Collect every tracked doc route beneath a node (for category percentages).
 function docRoutesUnder(node, acc = []) {
@@ -122,6 +123,10 @@ export default function Sidebar({ open, onClose }) {
       <aside className={`sidebar${open ? ' open' : ''}`} onClick={(e) => {
         if (e.target.closest('a')) onClose?.();
       }}>
+        <div className="sidebar__nav-mobile">
+          <div className="sidebar__group-label">Navigation</div>
+          <NavMenu onNavigate={onClose} />
+        </div>
         <div className="sidebar__group-label">Documentation</div>
         {tree.children.map((node, i) => (
           <TreeNode
