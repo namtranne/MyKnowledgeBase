@@ -14,6 +14,37 @@ The strongest interview answers connect the concept to something you've actually
 
 ---
 
+## 🎯 What Interviewers Actually Ask (Ranked by Frequency)
+
+For most software engineering roles — especially backend — OS questions rarely look like *"define paging."* They're framed as **practical problems**: *"your service is slow / leaking / falling over — what's happening and how do you fix it?"* Here's what actually comes up, weighted by frequency for dev-focused interviews.
+
+### 🟢 Tier 1 — Nearly always asked
+
+| Topic | How it's practically framed | Chapter |
+|-------|-----------------------------|---------|
+| **Processes, threads & concurrency** | "Threads vs processes vs async for this workload?" · "How many threads would you give it?" · "Why does this service OOM under load?" | [01](./01-process-thread-management) |
+| **Synchronization** (races, deadlocks, locks) | "Fix this race condition" · "Two DB transactions deadlock — why, and how do you prevent it?" · "Reduce lock contention" | [04](./04-synchronization-deadlocks) |
+
+### 🟡 Tier 2 — Common (backend / performance roles)
+
+| Topic | How it's practically framed | Chapter |
+|-------|-----------------------------|---------|
+| **Memory management** | "Why was the container OOMKilled when heap looked fine?" · "Stack vs heap" · cache locality: "why do arrays beat linked lists?" | [03](./03-memory-management) |
+| **I/O models** | "How does Node/nginx/Redis handle 100K connections on a few threads?" · blocking vs non-blocking vs epoll | [05](./05-file-systems-io) |
+
+### 🔴 Tier 3 — Senior / infra / SRE-leaning roles
+
+| Topic | How it's practically framed | Chapter |
+|-------|-----------------------------|---------|
+| **Context-switching cost & scheduling** | The *why* behind thread-pool sizing and container CPU **throttling** (low avg CPU but bad p99) | [02](./02-cpu-scheduling) |
+| **Linux production debugging** | "Investigate high CPU / a memory leak / FD exhaustion" (`top`, `perf`, `strace`, `lsof`); signals & graceful shutdown | [06](./06-linux-internals) |
+
+:::tip The Through-Line
+Interviewers want to see you connect a **symptom** (latency spike, OOM, deadlock, connection/port exhaustion) to the underlying **OS mechanism** and a **concrete fix**. Definitions get you a pass; the symptom → mechanism → fix chain is what signals seniority. The practical questions in [§3](#3-scenario-based-questions) below are phrased exactly this way.
+:::
+
+---
+
 ## 1. Conceptual Questions
 
 ### Q1: Explain the difference between a process and a thread
@@ -564,6 +595,63 @@ perf top                                 # Real-time CPU profiling
 | `vmstat` blocked (b) | Low | High | Possibly high |
 | Threads in `RUNNABLE` | Many | Few | Few (most `BLOCKED`) |
 | `perf top` | Hot user functions | Syscalls (read/write) | Lock functions (futex) |
+
+---
+
+## 3b. Practical & Optimization Questions
+
+These are the "related to actual software development" questions — the ones where the interviewer wants to see you turn OS theory into a performance or scaling decision.
+
+### Q16: How do you size a thread pool?
+
+**Answer:** Start by classifying the work, because the two cases have opposite answers:
+
+- **CPU-bound** (hashing, compression, parsing, computation): `pool size ≈ number of cores`. Adding threads beyond core count doesn't add throughput — the extra threads just fight for the CPU and you pay the **context-switch + cold-cache tax** on every switch.
+- **I/O-bound** (DB calls, HTTP fan-out): threads spend most of their time blocked, so you can go higher. **Little's Law** gives the target: `threads ≈ target_throughput × avg_latency`. Example: 500 req/s × 0.2 s average latency ≈ 100 threads.
+
+**Watch out for:**
+
+- **Mixing CPU-bound and I/O-bound work in one pool** starves both — give them separate pools.
+- **Inside containers**, the runtime may see the *host's* core count, not your cgroup limit, and size pools far too large. Set `GOMAXPROCS` / `-XX:ActiveProcessorCount` to the cgroup CPU limit.
+- **Downstream capacity:** a huge DB connection pool doesn't add throughput once you exceed what the database can execute in parallel — it just moves congestion into the DB.
+
+> **Senior signal:** "I'd measure, not guess — but my starting point is `cores` for CPU-bound and `throughput × latency` for I/O-bound, with separate pools per workload class and a bounded queue with backpressure so a spike sheds load instead of spawning threads."
+
+---
+
+### Q17: A hot loop is slow even though the algorithm is O(n). How do you speed it up?
+
+**Answer:** When the Big-O is already good, the bottleneck is usually the **memory hierarchy**, not instruction count. A cache miss to DRAM (~100 ns) is ~100× an L1 hit (~1 ns), so *how* you touch memory dominates.
+
+- **Improve spatial locality:** iterate contiguous memory (arrays / `ArrayList`) instead of pointer-chasing structures (linked lists, node-based trees) so each cache line you pull in is fully used. This is why an array scan crushes a linked-list scan even at the same O(n).
+- **Struct-of-arrays over array-of-structs** when you only touch a few fields in a hot loop — you stop dragging unused fields through the cache.
+- **Access matrices in row-major order** to walk memory sequentially and let the hardware prefetcher work; column-major traversal misses on nearly every access.
+- **Watch false sharing** in multithreaded code: two threads writing different variables that share a cache line ping-pong that line between cores. Pad/align to 64 bytes.
+- **Reduce allocations** in the hot path — fresh allocations scatter data and thrash the cache; reuse buffers.
+
+> **Senior signal:** "Profile first (`perf stat` for cache-misses). If the algorithm is already optimal, I'd look at data layout and access patterns — locality often buys more than micro-optimizing the code, because we're memory-bound, not compute-bound."
+
+---
+
+### Q18: How does a single-threaded server (Node.js, nginx, Redis) handle 100K concurrent connections?
+
+**Answer:** With **I/O multiplexing** (`epoll` on Linux / `kqueue` on BSD) driving an **event loop**, not a thread per connection. One thread blocks in `epoll_wait`; the kernel returns only the sockets that are *ready*; the thread services them and loops. Because most connections are idle at any instant, one thread can shepherd tens of thousands cheaply — whereas thread-per-connection would need 100K threads (~100 GB of stacks) and drown in context switches. This is the solution to the **C10K problem**.
+
+**The catch you must mention:** you can **never block the event loop**. One synchronous DB call, slow file read, or CPU-heavy operation freezes *every* connection that thread is multiplexing. That's why Redis avoids O(N) commands like `KEYS *` (use `SCAN`), and why Node/Netty offload blocking work to a separate worker pool.
+
+> **Senior signal:** connect it to the trade-off — event loops give massive I/O concurrency but demand non-blocking discipline; a CPU-bound workload is still better served by a thread pool sized to cores.
+
+---
+
+### Q19: Your pod's average CPU is 30% but p99 latency is terrible, and it occasionally gets OOMKilled. What's going on?
+
+**Answer:** Two classic container pitfalls, both rooted in cgroups:
+
+**CPU throttling (the latency half).** A CPU *limit* is a hard **CFS bandwidth quota** (`cpu.cfs_quota_us`), not a soft target. If a burst of work briefly exceeds the quota, the kernel **freezes every thread in the cgroup until the next 100 ms period** — even if the node has idle cores. Averaged over a minute the CPU looks idle (30%); at 100 ms resolution the app is repeatedly paused mid-request, wrecking the tail. **Confirm** with `container_cpu_cfs_throttled_periods_total`; **fix** by raising/removing the limit and right-sizing from actual burst, not average.
+
+**OOMKill (the memory half).** The cgroup limits **RSS**, not your language's heap. A JVM with a comfortable `-Xmx` can still be killed because thread stacks, metaspace, JIT code cache, and **native/off-heap buffers** (e.g., Netty direct byte buffers) all count toward RSS. **Confirm** by watching `container_memory_working_set_bytes` climb while heap stays flat — the gap is off-heap memory. **Fix** by budgeting the memory limit for total RSS (heap + native), capping `-XX:MaxDirectMemorySize`, and fixing any native-buffer leak.
+
+> **Senior signal:** "Low *average* CPU tells you nothing about sub-second throttling, and 'heap looks fine' tells you nothing about RSS — the container enforces quota and RSS, so I'd look at throttled-periods and working-set metrics, not the averages on the main dashboard."
 
 ---
 
