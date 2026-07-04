@@ -9,6 +9,79 @@ import AlgoViz from '@site/src/components/AlgoViz';
 
 Last week you mastered BFS and DFS on unweighted graphs. This week the edges get **weights**, the algorithms get smarter, and entirely new structural tools — **Union-Find**, **topological sort**, and **minimum spanning trees** — enter your toolkit. These patterns dominate interviews at every level.
 
+:::tip How to read this chapter (for first-time learners)
+You do **not** need to memorise seven algorithms at once. Each one is just BFS/DFS with a small twist. Read it in this order:
+
+1. **Skim the glossary and decision guide below** so the vocabulary feels familiar.
+2. For each algorithm, read the **plain-English intuition and analogy first**, then the step list, then the code, then play the interactive visualization.
+3. After each algorithm, try to re-explain it out loud in one sentence. If you can't, re-read the analogy.
+4. Only after you understand *one* shortest-path algorithm (Dijkstra) should you move to the others — they all reuse the same "relaxation" idea.
+
+Everything in this chapter builds on one primitive you already know: **visit a node, look at its neighbours, maybe update something.** The differences are *what* you update and *in what order* you visit.
+:::
+
+### Prerequisite recap (from Week 7)
+
+Before starting, make sure these Week 7 ideas feel automatic. If any are shaky, review them first — this week assumes them.
+
+| Concept | One-line reminder | Why you need it this week |
+|---|---|---|
+| **Adjacency list** | `Map<node, List<neighbours>>` | Every algorithm here iterates neighbours of a node |
+| **BFS (queue)** | Explore level by level; first time you reach a node is the shortest *in edges* | Kahn's topo sort and bipartite check are BFS variants |
+| **DFS (recursion/stack)** | Go deep, backtrack | Tarjan's bridges and cycle detection are DFS variants |
+| **Visited set** | Never process a node twice | Prevents infinite loops in every algorithm below |
+| **Directed vs undirected** | Directed: add one edge; undirected: add both directions | MST/Union-Find are undirected; topo sort is directed |
+
+The single new idea this week is that edges carry **weights**, so "shortest" now means "smallest total weight" instead of "fewest edges." Plain BFS can no longer answer that — hence Dijkstra and friends.
+
+### Glossary — read this once, refer back often
+
+| Term | Plain-English meaning |
+|---|---|
+| **Weight / cost** | A number attached to an edge (distance, time, price, probability). |
+| **Weighted graph** | A graph whose edges have weights. |
+| **Shortest path** | The path between two nodes with the smallest *sum of weights* (not fewest edges). |
+| **Relaxation** | Checking "is going through node `u` a cheaper way to reach node `v` than what I have so far?" and, if so, updating `v`'s recorded distance. This one operation is the heart of Dijkstra and Bellman-Ford. |
+| **`dist[]` array** | Best-known distance from the source to each node so far. Starts at infinity, shrinks as we relax. |
+| **Min-heap / priority queue** | A structure that always hands you the smallest item next. Lets Dijkstra always expand the currently-closest node. |
+| **DAG** | Directed Acyclic Graph — directed edges, no cycles. Required for topological sort. |
+| **In-degree** | How many edges point *into* a node. A node with in-degree 0 has no unmet prerequisites. |
+| **Connected component** | A group of nodes all reachable from each other. |
+| **Disjoint set** | A partition of nodes into non-overlapping groups; managed by Union-Find. |
+| **Spanning tree** | A subset of edges that connects all `V` nodes using exactly `V − 1` edges and no cycle. |
+| **MST** | Minimum Spanning Tree — the spanning tree with the smallest total weight. |
+| **Bipartite** | A graph whose nodes split into two groups with edges only *between* groups, never within. |
+| **Bridge** | An edge whose removal disconnects the graph (a single point of failure). |
+
+### Decision guide — "which tool do I reach for?"
+
+Work down this list top-to-bottom; the first match is almost always right.
+
+```
+Is the question about EDGE WEIGHTS and a "shortest / cheapest path"?
+├── Weights can be NEGATIVE?              → Bellman-Ford
+├── Need "at most K stops/edges"?         → Bellman-Ford-style (K rounds) or modified Dijkstra
+└── All weights ≥ 0?                       → Dijkstra (min-heap)
+
+Is it about GROUPING / CONNECTIVITY ("same group?", "merge", "cycle in undirected")?
+                                          → Union-Find (Disjoint Set Union)
+
+Is it about ORDERING with DEPENDENCIES ("prerequisite", "schedule", "build order")?
+                                          → Topological Sort (Kahn's BFS)
+
+Is it "CONNECT EVERYTHING at minimum total cost"?
+├── Given an edge list / sparse graph?     → Kruskal's MST (sort + Union-Find)
+└── Given an adjacency list / dense graph? → Prim's MST (min-heap)
+
+Is it "split into TWO groups with no internal conflicts" / "two-colour"?
+                                          → Bipartite check (BFS 2-colouring)
+
+Is it "find critical edges / single points of failure"?
+                                          → Tarjan's bridges (DFS low-link)
+```
+
+A fuller keyword-to-technique table appears in the [Pattern Recognition Guide](#pattern-recognition-guide) later in the chapter — use this compact version while learning, that one while drilling problems.
+
 ---
 
 ## 1 · Core Theory
@@ -44,6 +117,24 @@ for (int[] e : edges) {
 Finds the **shortest path from a single source** to all other nodes in a graph with **non-negative** edge weights.
 
 **Key idea:** greedily relax the closest unvisited node, using a **min-heap (priority queue)** to pick the next node in O(log V) time.
+
+**Analogy — ripples in a pond.** Drop a stone at the source. The ripple spreads outward, always reaching the *nearest* new point first. Dijkstra is that ripple, except distances aren't uniform: some directions are "slow" (heavy edges) and some are "fast" (light edges). The min-heap is what lets the ripple always grow from its closest edge first, so the moment the ripple *touches* a node you know the cheapest way to reach it.
+
+**What "relaxation" means here (the one idea to internalise).** For every edge `u → v` with weight `w`, relaxation asks a single question:
+
+> "I currently think the cheapest way to reach `v` costs `dist[v]`. But what if I go to `u` first (costing `dist[u]`) and then take this edge (costing `w`)? If `dist[u] + w` is smaller, I just found a shorter route — record it."
+
+In code that is exactly the three lines inside the loop:
+
+```java
+int nd = dist[u] + w;      // cost of reaching v *through u*
+if (nd < dist[v]) {         // is that cheaper than what we knew?
+    dist[v] = nd;           // yes — update the best-known distance
+    heap.offer(new int[]{nd, v}); // and remember to explore from v later
+}
+```
+
+Every shortest-path algorithm this week (Dijkstra, Bellman-Ford) is just "relax edges, in some clever order." Dijkstra's cleverness is the *order*: always relax from the closest finalized node.
 
 #### Why Dijkstra works (and when it breaks)
 
@@ -163,6 +254,14 @@ public static int[] dijkstra(Map<Integer, List<int[]>> graph, int source, int n)
 
 Bellman-Ford relaxes **all edges V − 1 times**, correctly handling **negative edge weights** and detecting **negative cycles**. Unlike Dijkstra (which greedily finalises nodes), Bellman-Ford progressively tightens distance estimates across multiple rounds, guaranteeing convergence after V − 1 iterations.
 
+**Why this technique exists:** Dijkstra's greedy "closest node is final" rule silently breaks when an edge can *lower* a cost you already committed to (a negative weight). Bellman-Ford gives that up: instead of being clever about order, it just relaxes **every** edge, over and over, until nothing can improve. Slower, but bulletproof against negatives — and it can even tell you when *no* answer exists (a negative cycle that lets you loop forever getting cheaper).
+
+**Interview signal:** "shortest path" **plus** any hint of negative values ("refund", "discount", "toll that pays you", "negative weight") = Bellman-Ford. Also the natural fit for "shortest path using at most K edges/stops," because after `k` rounds `dist[]` holds the best cost reachable in `≤ k` edges (this is the trick behind LC 787 Cheapest Flights Within K Stops).
+
+**Analogy — rumour spreading round by round.** Imagine a rumour (the best-known distance) spreading through a crowd. In each "round," everyone tells all their neighbours the cheapest version they've heard. After round 1 the rumour has travelled at most 1 hop from the source, after round 2 at most 2 hops, and so on. Since any shortest path visits at most `V − 1` edges (more would repeat a node), after `V − 1` rounds the true cheapest cost has reached everyone. If a round *still* improves something after that, the crowd can gossip a cost down forever — a **negative cycle**.
+
+**Why exactly `V − 1` rounds?** A shortest path can't usefully revisit a node, so it uses at most `V − 1` edges. Each round guarantees to "lock in" at least one more edge of every shortest path, so `V − 1` rounds is always enough. A `V`-th round that still lowers a distance can only mean a negative cycle.
+
 ```java
 import java.util.*;
 
@@ -258,6 +357,8 @@ public static int[] bellmanFord(int n, int[][] edges, int source) {
 **Interview signal:** When you see "connect", "merge", "group", "same component", "cycle detection in undirected graph", or "dynamic connectivity", Union-Find is almost always the right tool. It is also the backbone of Kruskal's MST.
 
 **Common mistake:** Forgetting to return a boolean from `union` — this boolean tells you whether a real merge happened. Without it, you cannot detect cycles (Redundant Connection) or count the number of components remaining.
+
+**Analogy — friend groups at a party.** Everyone starts as their own group. When two people become friends (`union`), their whole groups merge into one. To answer "are these two people in the same group?" you don't compare everyone — you just ask each person "who is the *leader* (root) of your group?" (`find`) and check if it's the same person. **Path compression** is everyone learning to point straight at the leader after the first time they're asked, so future questions are instant. **Union by rank** is always merging the smaller group under the bigger group's leader, so the "who's your leader?" chains never get tall.
 
 Tracks a collection of **disjoint sets** and supports two operations efficiently:
 
@@ -365,7 +466,9 @@ class UnionFind {
 
 **Common mistake:** Assuming a unique topological order exists. In general, multiple valid orderings are possible. Only when the DAG forms a single chain is the ordering unique. Kahn's BFS explores all zero-indegree nodes at each level, and tie-breaking is arbitrary.
 
-A **topological ordering** of a directed acyclic graph (DAG) is a linear ordering of vertices such that for every edge u → v, u comes before v. It only exists for DAGs — a cycle makes it impossible.
+**Analogy — getting dressed.** You must put on socks before shoes, and a shirt before a jacket. Some items have no prerequisites (you can put on socks or a shirt in any order). A topological sort is any valid dressing order that never puts shoes before socks. Kahn's algorithm builds it by repeatedly grabbing whatever item has *nothing left blocking it* (in-degree 0), "wearing" it, and then removing it as a blocker from everything that depended on it — which may free up new items to wear.
+
+A **topological ordering** of a directed acyclic graph (DAG) is a linear ordering of vertices such that for every edge u → v, u comes before v. It only exists for DAGs — a cycle makes it impossible (if putting on A requires B and B requires A, you can never start).
 
 **Kahn's algorithm (BFS-based):**
 
@@ -480,7 +583,16 @@ public static List<Integer> topologicalSort(List<List<Integer>> graph, int n) {
 
 A **spanning tree** of a connected undirected graph uses exactly V − 1 edges to connect all V vertices. The **minimum** spanning tree minimises the total edge weight.
 
+**Analogy — cheapest way to wire up towns.** You have towns (nodes) and possible cables between them (weighted edges). You want every town on the same power grid, spending the least on cable. You never build a cable that connects two towns *already* on the same grid (that's wasted money = a cycle). Both algorithms below do exactly this; they only differ in *how they hunt* for the next cheap cable:
+
+- **Kruskal's** is a thrifty contractor with a global price list: sort *all* cables cheapest-first, and lay each one down as long as it joins two separate grids.
+- **Prim's** grows *one* grid outward: from the towns already connected, always add the single cheapest cable that reaches a *new* town.
+
+Both always produce a valid MST — pick based on the input format (see the comparison table below).
+
 #### Kruskal's Algorithm (Edge-centric, uses Union-Find)
+
+**Intuition:** Greedily take the globally cheapest edge that doesn't form a cycle. The Union-Find check `uf.union(a, b)` does double duty — it returns `false` exactly when `a` and `b` are already connected (adding the edge would make a cycle, so skip it) and `true` when the edge safely joins two components.
 
 1. Sort all edges by weight.
 2. Iterate through edges; add each edge if it connects two different components (Union-Find check).
@@ -564,6 +676,8 @@ public static int kruskal(int n, int[][] edges) {
 
 #### Prim's Algorithm (Vertex-centric, uses heap)
 
+**Intuition:** Grow the tree outward from a single seed node. At every step you hold a min-heap of all edges that cross from "inside the tree" to "outside," and you always pull the cheapest such edge to swallow one new node. Structurally this is Dijkstra with one change: the heap key is the *edge weight to reach a node*, not the *total distance from the source*. The `if (visited[u]) continue;` guard plays the same role as Dijkstra's stale-entry guard — it discards edges that would loop back into the tree.
+
 1. Start from any node; push all its edges onto a min-heap.
 2. Pop the cheapest edge leading to an unvisited node; mark that node visited.
 3. Push that node's edges onto the heap.
@@ -592,6 +706,74 @@ public static int prim(Map<Integer, List<int[]>> graph, int n) {
 }
 ```
 
+<AlgoViz
+  title="Prim's MST — Grow the Tree from Node 0"
+  description="Same 5-node graph as Kruskal. Edges: 0-2(2), 0-1(4), 1-2(1), 1-3(5), 3-4(3), 2-3(8). The array shows the weight of the edge that attached each node (∞ = not yet in tree)."
+  steps={[
+    {
+      array: [0, "INF", "INF", "INF", "INF"],
+      labels: { 0: "node 0", 1: "node 1", 2: "node 2", 3: "node 3", 4: "node 4" },
+      highlights: [0],
+      variables: { heap: "[(0,0)]", mstWeight: 0, visited: "{}" },
+      explanation: "Seed the tree at node 0. Push (weight 0, node 0) onto the min-heap. mstWeight starts at 0.",
+      code: "heap.offer(new int[]{0, 0}); // {weight, node}"
+    },
+    {
+      array: [0, "INF", "INF", "INF", "INF"],
+      labels: { 0: "node 0", 1: "node 1", 2: "node 2", 3: "node 3", 4: "node 4" },
+      highlights: [0],
+      secondary: [1, 2],
+      variables: { popped: "(0,0)", visited: "{0}", mstWeight: 0, heap: "[(2,2),(4,1)]" },
+      explanation: "Pop (0,0): add node 0 for free. Push its crossing edges: 0-2 (w2) and 0-1 (w4).",
+      code: "visited[0]=true; heap.offer({2,2}); heap.offer({4,1});"
+    },
+    {
+      array: [0, "INF", 2, "INF", "INF"],
+      labels: { 0: "node 0", 1: "node 1", 2: "node 2", 3: "node 3", 4: "node 4" },
+      highlights: [0, 2],
+      secondary: [1, 3],
+      variables: { popped: "(2,2)", visited: "{0,2}", mstWeight: 2, heap: "[(1,1),(4,1),(8,3)]" },
+      explanation: "Cheapest crossing edge is 0-2 (w2). Add node 2, mstWeight=2. Push 2-1 (w1) and 2-3 (w8).",
+      code: "visited[2]=true; mstWeight += 2; // push 2's edges"
+    },
+    {
+      array: [0, 1, 2, "INF", "INF"],
+      labels: { 0: "node 0", 1: "node 1", 2: "node 2", 3: "node 3", 4: "node 4" },
+      highlights: [0, 1, 2],
+      secondary: [3],
+      variables: { popped: "(1,1)", visited: "{0,1,2}", mstWeight: 3, heap: "[(4,1),(5,3),(8,3)]" },
+      explanation: "Pop (1,1): edge 2-1 (w1) is cheapest. Add node 1, mstWeight=3. Push 1-3 (w5). Note (4,1) is now a stale duplicate.",
+      code: "visited[1]=true; mstWeight += 1; // push 1-3 (w5)"
+    },
+    {
+      array: [0, 1, 2, "INF", "INF"],
+      labels: { 0: "node 0", 1: "node 1", 2: "node 2", 3: "node 3", 4: "node 4" },
+      highlights: [0, 1, 2],
+      secondary: [1],
+      variables: { popped: "(4,1)", skipped: true, reason: "node 1 already in tree" },
+      explanation: "Pop (4,1): node 1 is already in the tree. Skip — the visited guard discards this stale edge (adding it would form a cycle).",
+      code: "if (visited[u]) continue; // skip"
+    },
+    {
+      array: [0, 1, 2, 5, "INF"],
+      labels: { 0: "node 0", 1: "node 1", 2: "node 2", 3: "node 3", 4: "node 4" },
+      highlights: [0, 1, 2, 3],
+      secondary: [4],
+      variables: { popped: "(5,3)", visited: "{0,1,2,3}", mstWeight: 8, heap: "[(3,4),(8,3)]" },
+      explanation: "Cheapest edge reaching a new node is 1-3 (w5). Add node 3, mstWeight=8. Push 3-4 (w3).",
+      code: "visited[3]=true; mstWeight += 5; // push 3-4 (w3)"
+    },
+    {
+      array: [0, 1, 2, 5, 3],
+      labels: { 0: "node 0", 1: "node 1", 2: "node 2", 3: "node 3", 4: "node 4" },
+      highlights: [0, 1, 2, 3, 4],
+      variables: { popped: "(3,4)", visited: "{0,1,2,3,4}", mstWeight: 11, heap: "[(8,3)]" },
+      explanation: "Add node 4 via edge 3-4 (w3), mstWeight=11. All 5 nodes connected. The leftover (8,3) is stale and will be skipped. MST weight = 0+2+1+5+3 = 11 — identical to Kruskal's answer.",
+      code: "visited[4]=true; mstWeight += 3; // done: 11"
+    }
+  ]}
+/>
+
 **Complexity:** O(E log V) with a binary heap.
 
 | | Kruskal's | Prim's |
@@ -610,6 +792,8 @@ public static int prim(Map<Integer, List<int[]>> graph, int n) {
 **Common mistake:** Forgetting to iterate over all components. A disconnected graph requires starting BFS from every unvisited node — skipping this means you only check one component and may return an incorrect `true`.
 
 A graph is **bipartite** if you can colour every node with one of two colours so that no edge connects two nodes of the same colour. Equivalently, it contains no odd-length cycle.
+
+**Analogy — seating rivals at two tables.** You must seat everyone at one of two tables so that no two people who dislike each other (connected by an edge) share a table. Start with anyone, seat them at table A, and seat all their rivals at table B, all of *those* people's rivals back at table A, and so on. If you ever find someone who *must* sit at both tables at once (an edge between two same-table people), it's impossible — the graph is not bipartite. That forced contradiction is exactly an **odd-length cycle**. The `colour[]` array records which table (0 or 1) each person got; `-1` means "not seated yet."
 
 **BFS 2-colouring:**
 
@@ -641,7 +825,218 @@ public static boolean isBipartite(List<List<Integer>> graph, int n) {
 }
 ```
 
+<AlgoViz
+  title="Bipartite Check — BFS 2-Colouring (two components)"
+  description="Component A is a 4-cycle 0-1-2-3-0 (bipartite). Component B is edge 4-5. The array holds each node's colour: -1 = unseated, 0 = table A, 1 = table B."
+  steps={[
+    {
+      array: [-1, -1, -1, -1, -1, -1],
+      labels: { 0: "node 0", 1: "node 1", 2: "node 2", 3: "node 3", 4: "node 4", 5: "node 5" },
+      highlights: [],
+      variables: { colour: "[-1,-1,-1,-1,-1,-1]", note: "-1 = uncoloured" },
+      explanation: "Initialise every node to -1 (unseated). We will start BFS from each still-uncoloured node so disconnected components are all checked.",
+      code: "Arrays.fill(colour, -1);"
+    },
+    {
+      array: [0, -1, -1, -1, -1, -1],
+      labels: { 0: "node 0", 1: "node 1", 2: "node 2", 3: "node 3", 4: "node 4", 5: "node 5" },
+      highlights: [0],
+      variables: { component: "A", queue: "[0]", colour: "[0,-1,-1,-1,-1,-1]" },
+      explanation: "Component A: start at node 0, seat it at table 0. Enqueue it.",
+      code: "colour[0] = 0; queue.add(0);"
+    },
+    {
+      array: [0, 1, -1, 1, -1, -1],
+      labels: { 0: "node 0", 1: "node 1", 2: "node 2", 3: "node 3", 4: "node 4", 5: "node 5" },
+      highlights: [0],
+      secondary: [1, 3],
+      variables: { popped: 0, "neighbours": "1, 3", colour: "[0,1,-1,1,-1,-1]" },
+      explanation: "Pop node 0. Its neighbours 1 and 3 are uncoloured -> give them the opposite colour, 1. Enqueue both.",
+      code: "colour[v] = 1 - colour[u]; // 1 - 0 = 1"
+    },
+    {
+      array: [0, 1, 0, 1, -1, -1],
+      labels: { 0: "node 0", 1: "node 1", 2: "node 2", 3: "node 3", 4: "node 4", 5: "node 5" },
+      highlights: [1],
+      secondary: [2],
+      variables: { popped: 1, "neighbour 0": "colour 0 != 1, OK", "neighbour 2": "-> 0", colour: "[0,1,0,1,-1,-1]" },
+      explanation: "Pop node 1 (colour 1). Neighbour 0 already has colour 0 (differs — fine). Neighbour 2 is new -> colour 0.",
+      code: "// 0 already coloured & differs: no conflict"
+    },
+    {
+      array: [0, 1, 0, 1, -1, -1],
+      labels: { 0: "node 0", 1: "node 1", 2: "node 2", 3: "node 3", 4: "node 4", 5: "node 5" },
+      highlights: [3, 2],
+      variables: { popped: "3, 2", check: "all edges join colour 0 with colour 1", conflicts: 0 },
+      explanation: "Pop nodes 3 and 2. Every neighbour is already coloured and every edge connects a 0 with a 1 — no same-colour edge. Component A is bipartite: table A = {0,2}, table B = {1,3}.",
+      code: "// no colour[v] == colour[u] triggered"
+    },
+    {
+      array: [0, 1, 0, 1, 0, 1],
+      labels: { 0: "node 0", 1: "node 1", 2: "node 2", 3: "node 3", 4: "node 4", 5: "node 5" },
+      highlights: [4, 5],
+      variables: { component: "B", colour: "[0,1,0,1,0,1]", result: "true" },
+      explanation: "Node 4 is still -1, so the outer loop starts a NEW BFS there (colour 0), colouring 5 as 1. No conflicts anywhere -> return true. (Skipping this restart is the classic bug: you'd never check component B.)",
+      code: "for (start...) if (colour[start] == -1) { /* new BFS */ }"
+    }
+  ]}
+/>
+
 **Complexity:** O(V + E).
+
+**Where it would fail:** add edge 0-2 to component A above. Now the 4-cycle becomes two triangles (odd cycles). BFS would try to colour node 2 as `1 - colour[0] = 1`, but node 2 already holds colour 0 from the path through node 1 — a same-colour edge, so `return false`. Any odd cycle forces exactly this contradiction.
+
+### 1.7 Tarjan's Algorithm — Finding Bridges
+
+**Why this technique exists:** In a network you often need to know the **single points of failure** — the connections whose removal would split the network in two. Such an edge is called a **bridge**. Checking each edge by removing it and re-running a connectivity test costs O(E · (V+E)); Tarjan finds *all* bridges in a single DFS pass, O(V + E). This is the classic solution to LeetCode 1192 "Critical Connections in a Network."
+
+**Interview signal:** "critical connection", "single point of failure", "edge whose removal disconnects the graph", or "bridge" all point here. It appears rarely, but is nearly impossible to derive on the spot — so learn the template.
+
+**Analogy — the only road to a village.** Picture towns joined by roads. A road is a **bridge** if it's the *only* way to get from one side to the other — remove it and some towns become unreachable. A road that's part of a loop is never a bridge, because you can always detour around the loop. So the whole trick is: **an edge is a bridge exactly when it is part of no cycle.** Tarjan detects "is this edge part of a cycle?" cheaply using two timestamps per node.
+
+**The two numbers every node gets.** As DFS explores, it stamps each node the moment it first arrives:
+
+- **`disc[u]` (discovery time):** a counter — the order in which DFS first reached `u`. Never changes once set.
+- **`low[u]` (low-link):** the *smallest* `disc` value reachable from `u` by going down its DFS subtree and then taking **at most one** "back edge" (an edge to an already-visited ancestor). Intuitively, "the earliest-discovered node I can climb back up to."
+
+**The bridge test.** For a tree edge `u → v` (the DFS descends from `u` into a fresh `v`), the edge is a bridge if and only if:
+
+```
+low[v] > disc[u]
+```
+
+Read it as: "from `v` and everything below it, there is **no** back edge that reaches `u` or anything discovered before `u`." If `v`'s subtree can't loop back to `u` or earlier, then this edge is the only link — a bridge. If it *could* loop back (`low[v] <= disc[u]`), the edge sits on a cycle and is safe.
+
+**Two edge cases to respect:** (1) don't treat the edge back to your immediate parent as a back edge, and (2) update `low[u]` with `disc[v]` for a back edge but with `low[v]` for a tree edge (after recursing).
+
+```java
+import java.util.*;
+
+class BridgeFinder {
+    List<List<Integer>> graph;
+    int[] disc, low;
+    int timer = 0;
+    List<List<Integer>> bridges = new ArrayList<>();
+
+    public List<List<Integer>> findBridges(int n, List<List<Integer>> graph) {
+        this.graph = graph;
+        disc = new int[n];
+        low = new int[n];
+        Arrays.fill(disc, -1); // -1 = unvisited
+        for (int i = 0; i < n; i++)
+            if (disc[i] == -1) dfs(i, -1);
+        return bridges;
+    }
+
+    private void dfs(int u, int parent) {
+        disc[u] = low[u] = timer++;
+        for (int v : graph.get(u)) {
+            if (v == parent) continue;          // skip the edge we came from
+            if (disc[v] == -1) {                 // tree edge: v is unvisited
+                dfs(v, u);
+                low[u] = Math.min(low[u], low[v]);
+                if (low[v] > disc[u])            // bridge test
+                    bridges.add(Arrays.asList(u, v));
+            } else {                             // back edge: v already visited
+                low[u] = Math.min(low[u], disc[v]);
+            }
+        }
+    }
+}
+```
+
+<AlgoViz
+  title="Tarjan's Bridges — disc[] and low[] in One DFS"
+  description="Graph: 0-1, 1-2, 2-0 (a triangle) plus 1-3 (a tail). Top row = disc[] (discovery time), bottom row = low[] (earliest reachable). -1 means unvisited. Expected bridge: edge 1-3."
+  steps={[
+    {
+      array: [0, -1, -1, -1],
+      array2: [0, -1, -1, -1],
+      labels: { 0: "disc0", 1: "disc1", 2: "disc2", 3: "disc3" },
+      labels2: { 0: "low0", 1: "low1", 2: "low2", 3: "low3" },
+      highlights: [0],
+      variables: { at: "node 0", timer: 1, bridges: "[]" },
+      explanation: "DFS starts at node 0. Stamp disc[0]=low[0]=0. Descend into neighbour 1.",
+      code: "disc[0] = low[0] = timer++; // 0"
+    },
+    {
+      array: [0, 1, -1, -1],
+      array2: [0, 1, -1, -1],
+      labels: { 0: "disc0", 1: "disc1", 2: "disc2", 3: "disc3" },
+      labels2: { 0: "low0", 1: "low1", 2: "low2", 3: "low3" },
+      highlights: [1],
+      variables: { at: "node 1", timer: 2, bridges: "[]" },
+      explanation: "Tree edge 0->1. Stamp disc[1]=low[1]=1. (Neighbour 0 is the parent, skipped.) Descend into neighbour 2.",
+      code: "disc[1] = low[1] = timer++; // 1"
+    },
+    {
+      array: [0, 1, 2, -1],
+      array2: [0, 1, 2, -1],
+      labels: { 0: "disc0", 1: "disc1", 2: "disc2", 3: "disc3" },
+      labels2: { 0: "low0", 1: "low1", 2: "low2", 3: "low3" },
+      highlights: [2],
+      variables: { at: "node 2", timer: 3, bridges: "[]" },
+      explanation: "Tree edge 1->2. Stamp disc[2]=low[2]=2. Node 2's neighbours are 1 (parent, skip) and 0 (already visited -> a back edge).",
+      code: "disc[2] = low[2] = timer++; // 2"
+    },
+    {
+      array: [0, 1, 2, -1],
+      array2: [0, 1, 0, -1],
+      labels: { 0: "disc0", 1: "disc1", 2: "disc2", 3: "disc3" },
+      labels2: { 0: "low0", 1: "low1", 2: "low2", 3: "low3" },
+      highlights: [2],
+      secondary: [0],
+      variables: { "back edge": "2->0", "low[2]": "min(2, disc[0]=0) = 0" },
+      explanation: "Back edge 2->0 to an ancestor. Pull low[2] down to disc[0]=0. This means node 2 can climb back to node 0 — the triangle is a cycle.",
+      code: "low[2] = Math.min(low[2], disc[0]); // 0"
+    },
+    {
+      array: [0, 1, 2, -1],
+      array2: [0, 0, 0, -1],
+      labels: { 0: "disc0", 1: "disc1", 2: "disc2", 3: "disc3" },
+      labels2: { 0: "low0", 1: "low1", 2: "low2", 3: "low3" },
+      highlights: [1],
+      secondary: [2],
+      variables: { "return to 1": true, "low[1]": "min(1, low[2]=0) = 0", "bridge? low[2]>disc[1]": "0 > 1 = false" },
+      explanation: "DFS returns from 2 to 1. Update low[1]=min(1,0)=0. Bridge test for edge 1-2: low[2]=0 > disc[1]=1? No. Edge 1-2 is on the cycle — NOT a bridge.",
+      code: "low[1]=min(low[1],low[2]); if(low[2]>disc[1]) // false"
+    },
+    {
+      array: [0, 1, 2, 3],
+      array2: [0, 0, 0, 3],
+      labels: { 0: "disc0", 1: "disc1", 2: "disc2", 3: "disc3" },
+      labels2: { 0: "low0", 1: "low1", 2: "low2", 3: "low3" },
+      highlights: [3],
+      variables: { at: "node 3", timer: 4, "low[3]": 3, "no back edge": true },
+      explanation: "Tree edge 1->3. Stamp disc[3]=low[3]=3. Node 3 is a dead end — its only neighbour is parent 1, so low[3] stays 3. It cannot reach any earlier node.",
+      code: "disc[3] = low[3] = timer++; // 3"
+    },
+    {
+      array: [0, 1, 2, 3],
+      array2: [0, 0, 0, 3],
+      labels: { 0: "disc0", 1: "disc1", 2: "disc2", 3: "disc3" },
+      labels2: { 0: "low0", 1: "low1", 2: "low2", 3: "low3" },
+      highlights: [1, 3],
+      variables: { "bridge? low[3]>disc[1]": "3 > 1 = TRUE", bridges: "[[1,3]]" },
+      explanation: "Return from 3 to 1. Bridge test for edge 1-3: low[3]=3 > disc[1]=1? YES. Node 3's subtree cannot loop back past node 1, so 1-3 is a BRIDGE — the single point of failure.",
+      code: "if (low[3] > disc[1]) bridges.add([1,3]); // BRIDGE"
+    },
+    {
+      array: [0, 1, 2, 3],
+      array2: [0, 0, 0, 3],
+      labels: { 0: "disc0", 1: "disc1", 2: "disc2", 3: "disc3" },
+      labels2: { 0: "low0", 1: "low1", 2: "low2", 3: "low3" },
+      highlights: [0, 1, 2, 3],
+      variables: { "return to 0": true, "bridge? low[1]>disc[0]": "0 > 0 = false", result: "bridges = [[1,3]]" },
+      explanation: "Return from 1 to 0. Bridge test for edge 0-1: low[1]=0 > disc[0]=0? No (it's on the triangle). DFS complete. Only bridge found: edge 1-3.",
+      code: "return bridges; // [[1,3]]"
+    }
+  ]}
+/>
+
+**Complexity:** O(V + E) — a single DFS. **Space:** O(V + E) for the two arrays plus the recursion stack.
+
+**Related idea — articulation points.** A *node* (not edge) whose removal disconnects the graph is an **articulation point**. The same DFS finds them with a slightly different test (`low[v] >= disc[u]`, plus a special rule for the DFS root). If a problem asks for "critical *servers*" rather than "critical *connections*," reach for articulation points.
 
 ---
 
@@ -918,3 +1313,127 @@ public static int networkDelayTime(int[][] times, int n, int k) {
 - Most "is it possible to finish all courses" problems reduce to cycle detection via topological sort.
 - When a problem says "minimum cost path" think Dijkstra. When it says "minimum cost to connect everything" think MST.
 - Tarjan's algorithm for bridges uses discovery time and low-link values. Practice the template — it appears rarely but is impossible to derive under pressure.
+
+---
+
+## 7 · Second Worked Example — Redundant Connection (LC 684)
+
+This example uses **Union-Find** instead of shortest paths, so you see the second big tool of the week in action on a full problem.
+
+**Problem:** A tree with `n` nodes had exactly one extra edge added, creating a single cycle. Given the edge list, return the edge that can be removed so the graph becomes a tree again. If several qualify, return the last one in the input.
+
+**Key insight:** Process edges one by one with Union-Find. Each edge tries to `union` its two endpoints. The **first** edge whose endpoints are **already in the same set** is the one that closes the cycle — that is the redundant edge.
+
+**Input:** `edges = [[1,2],[1,3],[2,3]]`
+
+**Trace (nodes are 1-indexed; `parent` starts as each node pointing to itself):**
+
+| Edge | `find(a)` | `find(b)` | Same root? | Action |
+|---|---|---|---|---|
+| `[1,2]` | 1 | 2 | No | `union` → merge, `parent[2]=1` |
+| `[1,3]` | 1 | 3 | No | `union` → merge, `parent[3]=1` |
+| `[2,3]` | 1 | 1 | **Yes** | `union` returns `false` → **redundant edge found** |
+
+By the third edge, nodes 2 and 3 already share root 1 (via the first two edges), so connecting them again forms a cycle. **Answer: `[2,3]`.**
+
+```java
+public int[] findRedundantConnection(int[][] edges) {
+    int n = edges.length;
+    UnionFind uf = new UnionFind(n + 1); // nodes are 1..n
+    for (int[] e : edges) {
+        if (!uf.union(e[0], e[1])) return e; // first edge that fails to merge
+    }
+    return new int[0];
+}
+```
+
+Notice how the whole solution is *four lines* once you have the Union-Find template — that is exactly why the template is worth memorising.
+
+---
+
+## 8 · Common Bugs & Fast Debugging
+
+When your graph solution gives a wrong or slow answer, scan this table before rewriting from scratch — most bugs are one of these.
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Dijkstra is slow / times out | Missing the `if (d > dist[u]) continue;` stale-entry guard | Add the guard so each node is fully processed only once |
+| Dijkstra gives wrong distances | Graph has negative edges | Switch to Bellman-Ford |
+| `NullPointerException` on `graph.get(u)` | Node has no outgoing edges / not in the map | Use `graph.getOrDefault(u, List.of())` |
+| Union-Find degrades to O(n) per op | Missing path compression or union by rank | Use both; copy the full template |
+| Can't detect a cycle with Union-Find | `union` doesn't return a boolean | Make `union` return `false` when roots already match |
+| Topo sort returns wrong / partial order | Forgot a node has in-degree 0, or built in-degree on the wrong endpoint | For edge `u→v`, increment `indegree[v]` (the *destination*) |
+| Topo sort "hangs" logically (order too short) | The graph has a cycle | If `order.size() != n`, report impossible — that's expected behaviour |
+| Bipartite check returns `true` wrongly | Only checked one component | Loop over every node and start BFS from each uncoloured one |
+| Bridge finder marks everything a bridge | Treating the parent edge as a back edge | Skip `v == parent`; update `low[u]` with `low[v]` for tree edges, `disc[v]` for back edges |
+| Grid Dijkstra crashes | Missing bounds / visited checks | Guard `0 <= r < rows && 0 <= c < cols` before pushing a neighbour |
+| Integer overflow on `dist[u] + w` | `dist[u]` is `Integer.MAX_VALUE` | Skip relaxation when `dist[u] == Integer.MAX_VALUE` (Bellman-Ford especially) |
+
+---
+
+## 9 · Self-Check Questions
+
+Try to answer each before expanding. If you can explain the "why," you understand the material — memorising the "what" is not enough.
+
+<details>
+<summary>1. Why can't plain BFS find the shortest path in a weighted graph?</summary>
+
+BFS treats every edge as cost 1, so it finds the path with the *fewest edges*, not the *smallest total weight*. A 3-edge path of weights `1+1+1=3` is cheaper than a 1-edge path of weight `10`, but BFS would pick the single heavy edge. Dijkstra fixes this by expanding nodes in order of accumulated cost using a min-heap.
+</details>
+
+<details>
+<summary>2. A node is popped from Dijkstra's heap with distance 7, but `dist[node]` is already 5. What do you do, and why?</summary>
+
+Skip it (`if (d > dist[u]) continue;`). This is a **stale entry** — it was pushed before a shorter path (cost 5) was found. Processing it would waste time and could trigger incorrect relaxations. Its shortest distance was already finalised at 5.
+</details>
+
+<details>
+<summary>3. Your graph has a negative edge. Which algorithm, and how do you know if there's even a valid answer?</summary>
+
+Use **Bellman-Ford**. After `V − 1` relaxation rounds, do one extra pass over all edges: if any distance still improves, a **negative cycle** exists and no finite shortest path is defined (you could loop forever getting cheaper). Otherwise the distances after `V − 1` rounds are correct.
+</details>
+
+<details>
+<summary>4. In Union-Find, what do path compression and union by rank each protect against?</summary>
+
+Both keep the trees short so `find` stays near O(1). **Union by rank** prevents building a tall tree by always attaching the smaller tree under the larger. **Path compression** flattens the path to the root during `find`, so repeated queries are instant. Drop either and worst-case chains can degrade toward O(log n) or O(n).
+</details>
+
+<details>
+<summary>5. Kahn's topological sort produces a result with only 4 of 6 nodes. What does that mean?</summary>
+
+The graph has a **cycle**. Two nodes never reached in-degree 0 because they mutually depend on each other, so they never got enqueued. Whenever `order.size() != n`, no valid topological ordering exists (e.g., a course schedule with circular prerequisites is impossible).
+</details>
+
+<details>
+<summary>6. When would you pick Kruskal's over Prim's for an MST — and vice versa?</summary>
+
+**Kruskal's** shines when the input is an **edge list** and the graph is **sparse** — you just sort edges and use Union-Find (O(E log E)). **Prim's** shines when the input is an **adjacency list** and the graph is **dense** — it grows outward with a min-heap (O(E log V)) and avoids sorting all edges. Both always yield a valid minimum spanning tree.
+</details>
+
+<details>
+<summary>7. What makes an edge a bridge, in one sentence — and how does `low[v] > disc[u]` capture it?</summary>
+
+An edge is a bridge when it belongs to **no cycle** (removing it disconnects the graph). `low[v] > disc[u]` says the subtree rooted at `v` has **no back edge** reaching `u` or any earlier-discovered node — so there's no alternative loop around this edge, making it the only connection.
+</details>
+
+<details>
+<summary>8. A grid problem asks for the path minimising the *maximum* single step (LC 1631/778), not the sum. Can Dijkstra still work?</summary>
+
+Yes, with a tweak: instead of `dist[v] = dist[u] + w`, use `cost[v] = min(cost[v], max(cost[u], w))`. The min-heap still expands the smallest-cost frontier first; you've just changed how a path's cost is combined from "sum" to "max." This is why these problems are Dijkstra variants.
+</details>
+
+---
+
+## 10 · One-Line Takeaways
+
+If you remember nothing else, remember these:
+
+- **Dijkstra** = BFS with a min-heap; non-negative weights only; finalise the closest node each pop.
+- **Bellman-Ford** = relax *all* edges `V − 1` times; the only shortest-path tool that survives negative weights and detects negative cycles.
+- **Relaxation** = "is going through `u` a cheaper way to reach `v`?" — the shared heartbeat of both shortest-path algorithms.
+- **Union-Find** = near-O(1) "same group?" and "merge"; the backbone of cycle detection and Kruskal's MST.
+- **Topological sort (Kahn's)** = repeatedly take a node with no unmet prerequisites; a short output means a cycle.
+- **MST** = connect everything cheapest; Kruskal (edges + Union-Find) vs Prim (vertices + heap).
+- **Bipartite** = 2-colour with BFS; a same-colour edge (odd cycle) means impossible.
+- **Tarjan's bridges** = one DFS with `disc[]`/`low[]`; a bridge is an edge on no cycle.
