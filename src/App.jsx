@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ProgressProvider } from './components/progress/ProgressContext.jsx';
+import { AuthProvider } from './auth/AuthContext.jsx';
+import AuthModal from './components/auth/AuthModal.jsx';
 import { DocLayout, PlainLayout } from './components/layout/Layout.jsx';
 import Home from './pages/Home.jsx';
 import DSARoadmap from './pages/dsa-roadmap/index.jsx';
@@ -11,7 +13,9 @@ const basename = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
 export default function App() {
   return (
     <BrowserRouter basename={basename}>
+      <AuthProvider>
       <ProgressProvider>
+        <AuthModal />
         <Routes>
           <Route path="/" element={<PlainLayout><Home /></PlainLayout>} />
           <Route path="/dsa-roadmap" element={<PlainLayout><DSARoadmap /></PlainLayout>} />
@@ -21,6 +25,7 @@ export default function App() {
           <Route path="*" element={<DocLayout><DocPage /></DocLayout>} />
         </Routes>
       </ProgressProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

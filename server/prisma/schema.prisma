@@ -1,0 +1,37 @@
+// Prisma schema for the Knowledge Base auth + checklist API.
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  passwordHash String
+  displayName  String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  itemStates   ItemState[]
+}
+
+// One row per (user, checklist item). Holds both the check state and the
+// user's written answer for that interview question.
+model ItemState {
+  id         String   @id @default(uuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  categoryId String
+  itemId     String
+  checked    Boolean  @default(false)
+  answer     String   @default("")
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, itemId])
+  @@index([userId, categoryId])
+}

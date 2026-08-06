@@ -1,5 +1,32 @@
 import { NavLink, Link } from 'react-router-dom';
 import Search from './Search.jsx';
+import { useAuth } from '../../auth/AuthContext.jsx';
+
+function AccountButton() {
+  const { isAuthenticated, user, openAuth, logout, loading } = useAuth();
+
+  if (loading) return null;
+
+  if (isAuthenticated) {
+    const label = user?.displayName || user?.email || 'Account';
+    return (
+      <div className="navbar__account">
+        <span className="navbar__account-name" title={user?.email}>
+          {label}
+        </span>
+        <button className="navbar__auth-btn" onClick={logout}>
+          Sign out
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button className="navbar__auth-btn navbar__auth-btn--primary" onClick={openAuth}>
+      Sign in
+    </button>
+  );
+}
 
 export default function Navbar({ onToggleSidebar }) {
   return (
@@ -15,6 +42,7 @@ export default function Navbar({ onToggleSidebar }) {
       </nav>
       <span className="navbar__spacer" />
       <Search />
+      <AccountButton />
     </header>
   );
 }

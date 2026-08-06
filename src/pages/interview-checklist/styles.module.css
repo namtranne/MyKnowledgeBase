@@ -563,3 +563,102 @@
     font-size: 0.65rem;
   }
 }
+
+/* ─── Per-question answer box ─────────────────────────────────────────────── */
+
+.answerWrap {
+  margin-top: 0.5rem;
+}
+
+.answerToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: none;
+  border: none;
+  padding: 0.1rem 0;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #7c8598;
+  transition: color 0.15s;
+}
+.answerToggle:hover {
+  color: #00f0ff;
+}
+
+.answerChevron {
+  font-size: 0.7rem;
+}
+
+.answerBadge {
+  margin-left: 0.4rem;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  border-radius: 999px;
+  padding: 0.05rem 0.4rem;
+}
+
+.answerBody {
+  margin-top: 0.4rem;
+}
+
+.answerInput {
+  width: 100%;
+  box-sizing: border-box;
+  background: #0c0e17;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9px;
+  padding: 0.55rem 0.65rem;
+  color: #e5e7eb;
+  font-size: 0.85rem;
+  font-family: inherit;
+  line-height: 1.45;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.answerInput:focus {
+  border-color: #a855f7;
+}
+
+.answerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}
+
+.answerSaveBtn {
+  background: linear-gradient(135deg, #00f0ff, #a855f7);
+  color: #08101c;
+  font-weight: 700;
+  font-size: 0.75rem;
+  border: none;
+  border-radius: 7px;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+  transition: filter 0.15s, opacity 0.15s;
+}
+.answerSaveBtn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.answerSaveBtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.answerSaved {
+  font-size: 0.72rem;
+  color: #34d399;
+  font-weight: 600;
+}
+
+.answerError {
+  font-size: 0.72rem;
+  color: #fca5a5;
+  font-weight: 600;
+}

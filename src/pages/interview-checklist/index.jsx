@@ -2,8 +2,13 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Layout from '../../compat/Layout.jsx';
 import styles from './styles.module.css';
 import { CATEGORIES, TOPICS_DATA } from './_topics-data';
+import { useAuth } from '../../auth/AuthContext.jsx';
+import { api } from '../../api/client.js';
 
 const STORAGE_KEY_PREFIX = 'interview-checklist-v1';
+const ANSWERS_KEY_PREFIX = 'interview-checklist-answers-v1';
+
+// ─── Local (offline / signed-out) storage ────────────────────────────────────
 
 function loadProgress(categoryId) {
   try {
@@ -15,6 +20,18 @@ function loadProgress(categoryId) {
 
 function saveProgress(categoryId, p) {
   localStorage.setItem(`${STORAGE_KEY_PREFIX}:${categoryId}`, JSON.stringify(p));
+}
+
+function loadAnswers(categoryId) {
+  try {
+    return JSON.parse(localStorage.getItem(`${ANSWERS_KEY_PREFIX}:${categoryId}`) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function saveAnswers(categoryId, a) {
+  localStorage.setItem(`${ANSWERS_KEY_PREFIX}:${categoryId}`, JSON.stringify(a));
 }
 
 // ─── Progress Ring ───────────────────────────────────────────────────────────
@@ -48,9 +65,87 @@ function ProgressRing({ pct, color }) {
   );
 }
 
+// ─── Answer box ──────────────────────────────────────────────────────────────
+// Expandable per-question answer field. Enter saves (Shift+Enter = newline);
+// a Save button is also provided. Persists to the server when signed in.
+
+function AnswerBox({ itemId, value, onSave }) {
+  const [open, setOpen] = useState(!!value);
+  const [draft, setDraft] = useState(value || '');
+  const [status, setStatus] = useState('idle'); // idle | saving | saved | error
+
+  // Keep the draft in sync if the stored value changes (e.g. after login sync).
+  useEffect(() => {
+    setDraft(value || '');
+  }, [value]);
+
+  const dirty = draft !== (value || '');
+
+  async function commit() {
+    if (!dirty) return;
+    setStatus('saving');
+    try {
+      await onSave(draft);
+      setStatus('saved');
+      setTimeout(() => setStatus('idle'), 1500);
+    } catch (err) {
+      setStatus('error');
+    }
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      commit();
+    }
+  }
+
+  return (
+    <div className={styles.answerWrap}>
+      <button
+        type="button"
+        className={styles.answerToggle}
+        onClick={() => setOpen((o) => !o)}>
+        <span className={styles.answerChevron}>{open ? '▾' : '▸'}</span>
+        {value ? 'Your answer' : 'Add answer'}
+        {value && !open && <span className={styles.answerBadge}>saved</span>}
+      </button>
+
+      {open && (
+        <div className={styles.answerBody}>
+          <textarea
+            className={styles.answerInput}
+            value={draft}
+            placeholder="Write your answer… (Enter to save, Shift+Enter for a new line)"
+            onChange={(e) => {
+              setDraft(e.target.value);
+              if (status !== 'idle') setStatus('idle');
+            }}
+            onKeyDown={handleKeyDown}
+            rows={3}
+          />
+          <div className={styles.answerActions}>
+            <button
+              type="button"
+              className={styles.answerSaveBtn}
+              onClick={commit}
+              disabled={!dirty || status === 'saving'}>
+              {status === 'saving' ? 'Saving…' : 'Save'}
+            </button>
+            {status === 'saved' && <span className={styles.answerSaved}>✓ Saved</span>}
+            {status === 'error' && (
+              <span className={styles.answerError}>Couldn’t save</span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Section ─────────────────────────────────────────────────────────────────
 
-function Section({ section, color, progress, onToggle }) {
+function Section({ section, color, progress, answers, onToggle, onSaveAnswer }) {
   const [isOpen, setIsOpen] = useState(true);
 
   const solved = useMemo(
@@ -58,7 +153,6 @@ function Section({ section, color, progress, onToggle }) {
     [section.items, progress]
   );
   const total = section.items.length;
-  const pct = total > 0 ? Math.round((solved / total) * 100) : 0;
 
   return (
     <div className={styles.section}>
@@ -80,7 +174,9 @@ function Section({ section, color, progress, onToggle }) {
               key={item.id}
               item={item}
               checked={!!progress[item.id]}
+              answer={answers[item.id] || ''}
               onToggle={() => onToggle(item.id)}
+              onSaveAnswer={(text) => onSaveAnswer(item.id, text)}
             />
           ))}
         </div>
@@ -91,7 +187,7 @@ function Section({ section, color, progress, onToggle }) {
 
 // ─── Checklist Item ────────────────────────────────────────────────────────────
 
-function ChecklistItem({ item, checked, onToggle }) {
+function ChecklistItem({ item, checked, answer, onToggle, onSaveAnswer }) {
   return (
     <div className={styles.checklistItem}>
       <input
@@ -110,6 +206,7 @@ function ChecklistItem({ item, checked, onToggle }) {
         {item.note && (
           <p className={styles.itemNote}>{item.note}</p>
         )}
+        <AnswerBox itemId={item.id} value={answer} onSave={onSaveAnswer} />
       </div>
       {item.resource && (
         <a
@@ -127,31 +224,114 @@ function ChecklistItem({ item, checked, onToggle }) {
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function InterviewChecklist() {
+  const { isAuthenticated, loading: authLoading, openAuth } = useAuth();
+
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0].id);
   const [progressMap, setProgressMap] = useState({});
+  const [answersMap, setAnswersMap] = useState({});
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
 
   const categoryConfig = CATEGORIES.find((c) => c.id === activeCategory);
   const categoryData = TOPICS_DATA[activeCategory];
   const progress = progressMap[activeCategory] || {};
+  const answers = answersMap[activeCategory] || {};
 
+  // Load state whenever auth status settles or changes.
   useEffect(() => {
-    const loaded = {};
-    CATEGORIES.forEach((cat) => {
-      loaded[cat.id] = loadProgress(cat.id);
-    });
-    setProgressMap(loaded);
-  }, []);
+    if (authLoading) return;
+    let cancelled = false;
 
-  const toggle = useCallback((itemId) => {
-    setProgressMap((prev) => {
-      const current = prev[activeCategory] || {};
-      const next = { ...current, [itemId]: !current[itemId] };
-      saveProgress(activeCategory, next);
-      return { ...prev, [activeCategory]: next };
-    });
-  }, [activeCategory]);
+    async function load() {
+      if (isAuthenticated) {
+        try {
+          const grouped = await api.getChecklist(); // { cat: { itemId: {checked, answer} } }
+          if (cancelled) return;
+          const p = {};
+          const a = {};
+          CATEGORIES.forEach((cat) => {
+            p[cat.id] = {};
+            a[cat.id] = {};
+            const items = grouped[cat.id] || {};
+            Object.entries(items).forEach(([itemId, s]) => {
+              p[cat.id][itemId] = !!s.checked;
+              if (s.answer) a[cat.id][itemId] = s.answer;
+            });
+          });
+          setProgressMap(p);
+          setAnswersMap(a);
+          return;
+        } catch {
+          // fall through to local storage if the API is unreachable
+        }
+      }
+      const p = {};
+      const a = {};
+      CATEGORIES.forEach((cat) => {
+        p[cat.id] = loadProgress(cat.id);
+        a[cat.id] = loadAnswers(cat.id);
+      });
+      if (!cancelled) {
+        setProgressMap(p);
+        setAnswersMap(a);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, authLoading]);
+
+  // Persist one item to the server (when signed in) or local storage.
+  const persist = useCallback(
+    (categoryId, itemId, patch) => {
+      if (isAuthenticated) {
+        return api.upsertItem(itemId, { categoryId, ...patch });
+      }
+      // local fallback
+      if (patch.checked !== undefined) {
+        const next = { ...loadProgress(categoryId), [itemId]: patch.checked };
+        saveProgress(categoryId, next);
+      }
+      if (patch.answer !== undefined) {
+        const next = { ...loadAnswers(categoryId), [itemId]: patch.answer };
+        saveAnswers(categoryId, next);
+      }
+      return Promise.resolve();
+    },
+    [isAuthenticated]
+  );
+
+  const toggle = useCallback(
+    (itemId) => {
+      const current = progressMap[activeCategory] || {};
+      const nextChecked = !current[itemId];
+      setProgressMap((prev) => ({
+        ...prev,
+        [activeCategory]: { ...(prev[activeCategory] || {}), [itemId]: nextChecked },
+      }));
+      persist(activeCategory, itemId, { checked: nextChecked }).catch(() => {
+        // revert on failure
+        setProgressMap((prev) => ({
+          ...prev,
+          [activeCategory]: { ...(prev[activeCategory] || {}), [itemId]: !nextChecked },
+        }));
+      });
+    },
+    [activeCategory, progressMap, persist]
+  );
+
+  const saveAnswer = useCallback(
+    async (itemId, text) => {
+      await persist(activeCategory, itemId, { answer: text });
+      setAnswersMap((prev) => ({
+        ...prev,
+        [activeCategory]: { ...(prev[activeCategory] || {}), [itemId]: text },
+      }));
+    },
+    [activeCategory, persist]
+  );
 
   const totalItems = useMemo(
     () => categoryData.sections.reduce((s, sec) => s + sec.items.length, 0),
@@ -165,8 +345,6 @@ export default function InterviewChecklist() {
     ),
     [categoryData, progress]
   );
-
-  const pct = totalItems > 0 ? Math.round((solvedItems / totalItems) * 0) : 0;
 
   const filteredSections = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -218,14 +396,21 @@ export default function InterviewChecklist() {
 
   const resetAll = useCallback(() => {
     if (
-      window.confirm(
+      !window.confirm(
         `Reset all "${categoryConfig.label}" progress? This cannot be undone.`
       )
     ) {
-      saveProgress(activeCategory, {});
-      setProgressMap((prev) => ({ ...prev, [activeCategory]: {} }));
+      return;
     }
-  }, [activeCategory, categoryConfig.label]);
+    setProgressMap((prev) => ({ ...prev, [activeCategory]: {} }));
+    setAnswersMap((prev) => ({ ...prev, [activeCategory]: {} }));
+    if (isAuthenticated) {
+      api.resetCategory(activeCategory).catch(() => {});
+    } else {
+      saveProgress(activeCategory, {});
+      saveAnswers(activeCategory, {});
+    }
+  }, [activeCategory, categoryConfig.label, isAuthenticated]);
 
   const cssVarColor = categoryConfig.color;
   const tabStyle = {
@@ -252,6 +437,20 @@ export default function InterviewChecklist() {
             Comprehensive interview preparation tracker. Track your progress across
             Behavioural, System Design, Databases, Microservices, CS Fundamentals, and more.
           </p>
+          {!authLoading && !isAuthenticated && (
+            <p className={styles.heroSub} style={{ marginTop: '0.5rem', fontSize: '0.82rem' }}>
+              Progress is saved on this device.{' '}
+              <button
+                onClick={openAuth}
+                style={{
+                  background: 'none', border: 'none', color: '#00f0ff',
+                  cursor: 'pointer', fontWeight: 600, padding: 0,
+                }}>
+                Sign in
+              </button>{' '}
+              to sync across devices.
+            </p>
+          )}
         </header>
 
         <div className={styles.categoryTabs} style={tabStyle}>
@@ -350,6 +549,11 @@ export default function InterviewChecklist() {
                           </a>
                         )}
                       </div>
+                      <AnswerBox
+                        itemId={item.id}
+                        value={answers[item.id] || ''}
+                        onSave={(text) => saveAnswer(item.id, text)}
+                      />
                       <div className={styles.searchResultMeta}>{sec.title}</div>
                     </li>
                   ))
@@ -364,7 +568,9 @@ export default function InterviewChecklist() {
               section={section}
               color={categoryConfig.color}
               progress={progress}
+              answers={answers}
               onToggle={toggle}
+              onSaveAnswer={saveAnswer}
             />
           ))
         )}
