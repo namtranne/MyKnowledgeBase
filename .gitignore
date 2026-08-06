@@ -15,3 +15,6 @@ build/
 .cursor/.endpoint-risk-state.json
 .cursor/.workspace-profile.json
 .cursor/.workspace-profile.log
+.env
+.env
+.env
