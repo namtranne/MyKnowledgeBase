@@ -39,6 +39,7 @@ export default function Navbar({ onToggleSidebar }) {
         <NavLink to="/docs/intro" className="navbar__link">📚 Docs</NavLink>
         <NavLink to="/dsa-roadmap" className="navbar__link">🏋️ DSA Roadmap</NavLink>
         <NavLink to="/interview-checklist" className="navbar__link">🎯 Interview Checklist</NavLink>
+        <NavLink to="/mock-interview" className="navbar__link">🤖 Mock Interview</NavLink>
       </nav>
       <span className="navbar__spacer" />
       <Search />

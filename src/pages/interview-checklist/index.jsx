@@ -34,6 +34,35 @@ function saveAnswers(categoryId, a) {
   localStorage.setItem(`${ANSWERS_KEY_PREFIX}:${categoryId}`, JSON.stringify(a));
 }
 
+function clearLocal(categoryId) {
+  try {
+    localStorage.removeItem(`${STORAGE_KEY_PREFIX}:${categoryId}`);
+    localStorage.removeItem(`${ANSWERS_KEY_PREFIX}:${categoryId}`);
+  } catch {
+    /* ignore */
+  }
+}
+
+// Push signed-out (guest) progress into the user's account for items the
+// server doesn't have yet. Mutates `grouped` so the UI shows merged state.
+async function uploadGuestChecklist(grouped) {
+  for (const cat of CATEGORIES) {
+    const localP = loadProgress(cat.id);
+    const localA = loadAnswers(cat.id);
+    const ids = new Set([...Object.keys(localP), ...Object.keys(localA)]);
+    const serverItems = (grouped[cat.id] ||= {});
+    for (const itemId of ids) {
+      if (serverItems[itemId]) continue; // server wins
+      const checked = !!localP[itemId];
+      const answer = localA[itemId] || '';
+      if (!checked && !answer) continue;
+      await api.upsertItem(itemId, { categoryId: cat.id, checked, answer });
+      serverItems[itemId] = { checked, answer };
+    }
+    clearLocal(cat.id);
+  }
+}
+
 // ─── Progress Ring ───────────────────────────────────────────────────────────
 
 function ProgressRing({ pct, color }) {
@@ -246,6 +275,9 @@ export default function InterviewChecklist() {
       if (isAuthenticated) {
         try {
           const grouped = await api.getChecklist(); // { cat: { itemId: {checked, answer} } }
+          // One-time upload of anything recorded while signed out in this
+          // browser, then clear it so it can't leak into another account.
+          await uploadGuestChecklist(grouped);
           if (cancelled) return;
           const p = {};
           const a = {};

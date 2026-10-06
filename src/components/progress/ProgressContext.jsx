@@ -1,63 +1,45 @@
-import { createContext, useContext, useCallback, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useCallback, useMemo } from 'react';
 import { getSectionCount } from '../../content/sections.js';
+import { useUserStateStore } from '../../auth/UserStateContext.jsx';
 
-const STORAGE_KEY = 'kb-reading-progress-v1';
+// Reading progress ("Mark read" per H2 section) for tracked doc pages.
+// Stored per user via UserStateContext under the key `reading:<route>`
+// with value { [sectionId]: true } — on the server when signed in,
+// in this browser (guest) otherwise.
+const KEY_PREFIX = 'reading:';
+const keyFor = (route) => `${KEY_PREFIX}${route}`;
+
 const ProgressContext = createContext(null);
 
-function load() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
 export function ProgressProvider({ children }) {
-  const [store, setStore] = useState(load);
+  const { store, set, remove, mode, ready, syncError } = useUserStateStore();
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-    } catch {
-      /* ignore quota / private-mode errors */
-    }
-  }, [store]);
+  const pageOf = useCallback((route) => store[keyFor(route)] || {}, [store]);
 
-  const toggleSection = useCallback((route, id) => {
-    setStore((prev) => {
-      const page = { ...(prev[route] || {}) };
-      if (page[id]) delete page[id];
-      else page[id] = true;
-      const next = { ...prev };
-      if (Object.keys(page).length) next[route] = page;
-      else delete next[route];
-      return next;
-    });
-  }, []);
-
-  const resetPage = useCallback((route) => {
-    setStore((prev) => {
-      if (!prev[route]) return prev;
-      const next = { ...prev };
-      delete next[route];
-      return next;
-    });
-  }, []);
-
-  const isChecked = useCallback(
-    (route, id) => !!store[route]?.[id],
-    [store]
+  const toggleSection = useCallback(
+    (route, id) => {
+      set(keyFor(route), (prev) => {
+        const page = { ...(prev || {}) };
+        if (page[id]) delete page[id];
+        else page[id] = true;
+        return Object.keys(page).length ? page : undefined;
+      });
+    },
+    [set]
   );
+
+  const resetPage = useCallback((route) => remove(keyFor(route)), [remove]);
+
+  const isChecked = useCallback((route, id) => !!pageOf(route)[id], [pageOf]);
 
   const getPageStats = useCallback(
     (route) => {
       const total = getSectionCount(route);
-      const checked = Math.min(Object.keys(store[route] || {}).length, total);
+      const checked = Math.min(Object.keys(pageOf(route)).length, total);
       const pct = total > 0 ? Math.round((checked / total) * 100) : 0;
       return { checked, total, pct };
     },
-    [store]
+    [pageOf]
   );
 
   const getRoutesStats = useCallback(
@@ -68,17 +50,26 @@ export function ProgressProvider({ children }) {
         const t = getSectionCount(r);
         if (!t) continue;
         total += t;
-        checked += Math.min(Object.keys(store[r] || {}).length, t);
+        checked += Math.min(Object.keys(pageOf(r)).length, t);
       }
       const pct = total > 0 ? Math.round((checked / total) * 100) : 0;
       return { checked, total, pct };
     },
-    [store]
+    [pageOf]
   );
 
   const value = useMemo(
-    () => ({ isChecked, toggleSection, resetPage, getPageStats, getRoutesStats }),
-    [isChecked, toggleSection, resetPage, getPageStats, getRoutesStats]
+    () => ({
+      isChecked,
+      toggleSection,
+      resetPage,
+      getPageStats,
+      getRoutesStats,
+      syncMode: mode, // 'user' (saved to account) | 'guest' (this browser only)
+      ready,
+      syncError,
+    }),
+    [isChecked, toggleSection, resetPage, getPageStats, getRoutesStats, mode, ready, syncError]
   );
 
   return <ProgressContext.Provider value={value}>{children}</ProgressContext.Provider>;

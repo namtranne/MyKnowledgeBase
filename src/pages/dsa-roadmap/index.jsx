@@ -3,11 +3,12 @@ import Layout from '../../compat/Layout.jsx';
 import Link from '../../compat/Link.jsx';
 import styles from './styles.module.css';
 import { FOUNDATIONS_PHASES, FOUNDATIONS_WEEKS } from './_foundations-data';
+import { useUserStateStore } from '../../auth/UserStateContext.jsx';
 
 const TRACK_CONFIG = {
   foundations: {
-    storageKey: 'dsa-foundations-progress',
-    startKey: 'dsa-foundations-start',
+    storageKey: 'dsa:progress:foundations',
+    startKey: 'dsa:start:foundations',
     totalWeeks: 20,
     label: 'Foundations',
     tagline: '20 Weeks / 420 Problems',
@@ -15,8 +16,8 @@ const TRACK_CONFIG = {
     subtitle: 'Beginner-to-intermediate. Build your core DSA skills with progressively challenging problems and ace coding interviews.',
   },
   intensive: {
-    storageKey: 'dsa-roadmap-progress',
-    startKey: 'dsa-roadmap-start',
+    storageKey: 'dsa:progress:intensive',
+    startKey: 'dsa:start:intensive',
     totalWeeks: 20,
     label: 'Intensive',
     tagline: '20 Weeks / 420 Problems',
@@ -178,48 +179,23 @@ const WEEKS = [
 
 const DAY_LABELS = { 1: 'Day 1-2: Foundation', 2: 'Day 3-4: Intermediate', 3: 'Day 5-7: Advanced' };
 
-const RANDOM_PICK_STORAGE_PREFIX = 'dsa-random-pick-v1';
+// All DSA state (progress, start dates, random pick) is stored per user via
+// UserStateContext — on the server when signed in, in this browser otherwise.
+const RANDOM_PICK_KEY_PREFIX = 'dsa:random-pick:';
 const RANDOM_PICK_TTL_MS = 2 * 60 * 60 * 1000;
 
-function randomPickStorageKey(trackKey) {
-  return `${RANDOM_PICK_STORAGE_PREFIX}:${trackKey}`;
+function randomPickKey(trackKey) {
+  return `${RANDOM_PICK_KEY_PREFIX}${trackKey}`;
 }
 
-function loadStoredRandomPickId(trackKey) {
-  try {
-    const raw = localStorage.getItem(randomPickStorageKey(trackKey));
-    if (!raw) return null;
-    const { id, until } = JSON.parse(raw);
-    if (typeof id !== 'string' || typeof until !== 'number' || Date.now() > until) return null;
-    return id;
-  } catch {
-    return null;
-  }
+function validRandomPickId(stored) {
+  if (!stored || typeof stored.id !== 'string' || typeof stored.until !== 'number') return null;
+  return Date.now() > stored.until ? null : stored.id;
 }
 
-function saveStoredRandomPickId(trackKey, id) {
-  try {
-    localStorage.setItem(
-      randomPickStorageKey(trackKey),
-      JSON.stringify({ id, until: Date.now() + RANDOM_PICK_TTL_MS }),
-    );
-  } catch {}
-}
-
-function clearStoredRandomPickId(trackKey) {
-  try {
-    localStorage.removeItem(randomPickStorageKey(trackKey));
-  } catch {}
-}
-
-function loadProgress(key) {
-  try {
-    return JSON.parse(localStorage.getItem(key) || '{}');
-  } catch { return {}; }
-}
-
-function saveProgress(key, p) {
-  localStorage.setItem(key, JSON.stringify(p));
+function todayISO() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
 }
 
 function ProgressRing({ pct }) {
@@ -244,17 +220,6 @@ function ProgressRing({ pct }) {
       </div>
     </div>
   );
-}
-
-function getStartDate(startKey) {
-  try {
-    const stored = localStorage.getItem(startKey);
-    if (stored) return new Date(stored);
-  } catch {}
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  localStorage.setItem(startKey, start.toISOString());
-  return start;
 }
 
 function computeCountdown(startDate, totalWeeks) {
@@ -369,28 +334,20 @@ function Countdown({ startDate, onReset, totalWeeks }) {
 
 export default function DSARoadmap() {
   const [track, setTrack] = useState('foundations');
-  const [progressMap, setProgressMap] = useState({});
+  const { store, set, ready } = useUserStateStore();
   const [openPhases, setOpenPhases] = useState({});
   const [openWeeks, setOpenWeeks] = useState({});
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
-  const [startDateMap, setStartDateMap] = useState({});
 
   const cfg = TRACK_CONFIG[track];
   const activePhases = track === 'foundations' ? FOUNDATIONS_PHASES : PHASES;
   const activeWeeks = track === 'foundations' ? FOUNDATIONS_WEEKS : WEEKS;
-  const progress = progressMap[track] || {};
-  const startDate = startDateMap[track] || null;
+  const progress = store[cfg.storageKey] || {};
+  const startISO = store[cfg.startKey];
+  const startDate = useMemo(() => (startISO ? new Date(startISO) : null), [startISO]);
 
   useEffect(() => {
-    const fProgress = loadProgress(TRACK_CONFIG.foundations.storageKey);
-    const iProgress = loadProgress(TRACK_CONFIG.intensive.storageKey);
-    setProgressMap({ foundations: fProgress, intensive: iProgress });
-
-    const fStart = getStartDate(TRACK_CONFIG.foundations.startKey);
-    const iStart = getStartDate(TRACK_CONFIG.intensive.startKey);
-    setStartDateMap({ foundations: fStart, intensive: iStart });
-
     setOpenPhases({ [activePhases[0]?.id]: true });
   }, []);
 
@@ -402,23 +359,28 @@ export default function DSARoadmap() {
     setShowRandomTopic(false);
   }, [track]);
 
+  // First visit for this user: day 1 of each track's countdown is today.
+  useEffect(() => {
+    if (!ready) return;
+    for (const t of Object.values(TRACK_CONFIG)) {
+      if (!store[t.startKey]) set(t.startKey, todayISO());
+    }
+  }, [ready, store, set]);
+
   const resetStartDate = useCallback(() => {
     if (window.confirm('Reset the countdown timer? This sets day 1 to today.')) {
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      localStorage.setItem(cfg.startKey, today.toISOString());
-      setStartDateMap(prev => ({ ...prev, [track]: today }));
+      set(cfg.startKey, todayISO());
     }
-  }, [track, cfg.startKey]);
+  }, [set, cfg.startKey]);
 
   const toggle = useCallback((id) => {
-    setProgressMap(prev => {
-      const current = prev[track] || {};
-      const next = { ...current, [id]: !current[id] };
-      saveProgress(cfg.storageKey, next);
-      return { ...prev, [track]: next };
+    set(cfg.storageKey, (current) => {
+      const next = { ...(current || {}) };
+      if (next[id]) delete next[id];
+      else next[id] = true;
+      return Object.keys(next).length ? next : undefined;
     });
-  }, [track, cfg.storageKey]);
+  }, [set, cfg.storageKey]);
 
   const totalProblems = useMemo(() => activeWeeks.reduce((s, w) => s + w.problems.length, 0), [activeWeeks]);
   const totalMocks = useMemo(() => activeWeeks.reduce((s, w) => s + w.mocks.length, 0), [activeWeeks]);
@@ -441,36 +403,38 @@ export default function DSARoadmap() {
   const [randomPickId, setRandomPickId] = useState(null);
   const [showRandomTopic, setShowRandomTopic] = useState(false);
 
+  const storedPick = store[randomPickKey(track)];
+
   useEffect(() => {
+    if (!ready) return;
     if (incompleteProblems.length === 0) {
       setRandomPickId(null);
-      clearStoredRandomPickId(track);
+      if (storedPick) set(randomPickKey(track), undefined);
       return;
     }
-    const storedId = loadStoredRandomPickId(track);
+    const storedId = validRandomPickId(storedPick);
     if (storedId && incompleteProblems.some((p) => p.id === storedId)) {
       setRandomPickId(storedId);
       return;
     }
     const idx = Math.floor(Math.random() * incompleteProblems.length);
     const id = incompleteProblems[idx].id;
-    saveStoredRandomPickId(track, id);
+    set(randomPickKey(track), { id, until: Date.now() + RANDOM_PICK_TTL_MS });
     setRandomPickId(id);
-  }, [incompleteProblems, track]);
+  }, [incompleteProblems, track, ready, storedPick, set]);
 
   const shuffleRandomPick = useCallback(() => {
     if (incompleteProblems.length === 0) return;
     setShowRandomTopic(false);
-    setRandomPickId((current) => {
-      const pool =
-        current && incompleteProblems.length > 1
-          ? incompleteProblems.filter((p) => p.id !== current)
-          : incompleteProblems;
-      const id = pool[Math.floor(Math.random() * pool.length)].id;
-      saveStoredRandomPickId(track, id);
-      return id;
-    });
-  }, [incompleteProblems, track]);
+    const current = randomPickId;
+    const pool =
+      current && incompleteProblems.length > 1
+        ? incompleteProblems.filter((p) => p.id !== current)
+        : incompleteProblems;
+    const id = pool[Math.floor(Math.random() * pool.length)].id;
+    set(randomPickKey(track), { id, until: Date.now() + RANDOM_PICK_TTL_MS });
+    setRandomPickId(id);
+  }, [incompleteProblems, track, randomPickId, set]);
 
   const randomPickEntry = useMemo(() => {
     if (!randomPickId) return null;
@@ -532,8 +496,7 @@ export default function DSARoadmap() {
 
   const resetAll = () => {
     if (window.confirm(`Reset all ${cfg.label} progress? This cannot be undone.`)) {
-      localStorage.removeItem(cfg.storageKey);
-      setProgressMap(prev => ({ ...prev, [track]: {} }));
+      set(cfg.storageKey, undefined);
     }
   };
 

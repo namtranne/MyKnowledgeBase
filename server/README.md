@@ -13,11 +13,27 @@ NestJS + PostgreSQL backend that provides:
 | POST   | `/api/auth/signup`                  | –    | `{ email, password, displayName? }` → `{ token, user }` |
 | POST   | `/api/auth/login`                   | –    | `{ email, password }` → `{ token, user }` |
 | GET    | `/api/auth/me`                      | JWT  | Current user |
+| GET    | `/api/health`                       | –    | Keep-alive / uptime check |
 | GET    | `/api/checklist`                    | JWT  | All item states, grouped by category |
 | PUT    | `/api/checklist/item/:itemId`       | JWT  | `{ categoryId, checked?, answer? }` upsert one item |
 | DELETE | `/api/checklist/category/:catId`    | JWT  | Reset a category's progress |
+| POST   | `/api/interview/resume`             | JWT  | multipart `file` (PDF/DOCX) → `{ text }` |
+| POST   | `/api/interview`                    | JWT  | `{ role, level, interviewType, durationMin, resumeText }` → first question |
+| POST   | `/api/interview/:id/answer`         | JWT  | `{ answer }` → next question, or `{ ended, result }` |
+| POST   | `/api/interview/:id/finish`         | JWT  | End early → evaluation (`passProbability`, per-answer feedback) |
+| GET    | `/api/interview/:id`                | JWT  | Full session: transcript + result |
+| GET    | `/api/interview`                    | JWT  | List the user's past interviews |
 
 Send the token as `Authorization: Bearer <token>`.
+
+`interviewType` is one of `technical`, `live-coding`, `system-design`, `behavioural`, `mixed`; `durationMin` is `15`, `30`, or `45`.
+
+## AI (mock interview)
+
+The interview feature calls the Anthropic API. Set these env vars:
+
+- `ANTHROPIC_API_KEY` — from https://console.anthropic.com/
+- `ANTHROPIC_MODEL` — optional, defaults to `claude-sonnet-5`; set to whatever model your account supports.
 
 ## Run locally (Docker — recommended)
 

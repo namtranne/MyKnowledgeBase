@@ -11,13 +11,49 @@ datasource db {
 }
 
 model User {
-  id           String      @id @default(uuid())
-  email        String      @unique
+  id           String             @id @default(uuid())
+  email        String             @unique
   passwordHash String
   displayName  String?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
   itemStates   ItemState[]
+  interviews   InterviewSession[]
+  states       UserState[]
+}
+
+// A single mock-interview run.
+model InterviewSession {
+  id              String             @id @default(uuid())
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  role            String // e.g. "Backend Engineer"
+  level           String // e.g. "Senior"
+  interviewType   String // technical | live-coding | system-design | behavioural | mixed
+  durationMin     Int
+  resumeText      String             @default("")
+  status          String             @default("in_progress") // in_progress | completed
+  passProbability Int? // 0-100, set on completion
+  summary         String? // JSON string: overall + per-answer feedback
+  startedAt       DateTime           @default(now())
+  endedAt         DateTime?
+  createdAt       DateTime           @default(now())
+  messages        InterviewMessage[]
+
+  @@index([userId])
+}
+
+// One turn in the interview conversation.
+model InterviewMessage {
+  id        String           @id @default(uuid())
+  session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId String
+  sender    String // interviewer | candidate
+  content   String
+  order     Int
+  createdAt DateTime         @default(now())
+
+  @@index([sessionId])
 }
 
 // One row per (user, checklist item). Holds both the check state and the
@@ -34,4 +70,19 @@ model ItemState {
 
   @@unique([userId, itemId])
   @@index([userId, categoryId])
+}
+
+// Generic per-user key/value store for everything else the UI tracks:
+// reading progress per doc page, DSA roadmap progress, start dates, etc.
+// Keys are namespaced by the client, e.g. "reading:/docs/...", "dsa:progress:foundations".
+model UserState {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  key       String
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, key])
+  @@index([userId])
 }

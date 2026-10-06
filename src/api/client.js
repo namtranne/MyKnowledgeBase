@@ -83,6 +83,47 @@ export const api = {
     }),
   me: () => request('/auth/me'),
 
+  // --- interview ---
+  parseResume: async (file) => {
+    const form = new FormData();
+    form.append('file', file);
+    const headers = {};
+    const token = getToken();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch(`${API_URL}/interview/resume`, {
+      method: 'POST',
+      headers,
+      body: form,
+    });
+    const text = await res.text();
+    let data = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = text;
+    }
+    if (!res.ok) {
+      const m = (data && (data.message || data.error)) || `Upload failed (${res.status})`;
+      throw new ApiError(Array.isArray(m) ? m.join(', ') : m, res.status);
+    }
+    return data;
+  },
+  createInterview: (payload) =>
+    request('/interview', { method: 'POST', body: payload }),
+  answerInterview: (id, answer) =>
+    request(`/interview/${id}/answer`, { method: 'POST', body: { answer } }),
+  finishInterview: (id) =>
+    request(`/interview/${id}/finish`, { method: 'POST', body: {} }),
+  getInterview: (id) => request(`/interview/${id}`),
+  listInterviews: () => request('/interview'),
+
+  // --- generic per-user state (reading progress, DSA roadmap, ...) ---
+  getState: () => request('/state'),
+  putState: (key, value) =>
+    request('/state', { method: 'PUT', body: { key, value } }),
+  deleteState: (key) =>
+    request(`/state?key=${encodeURIComponent(key)}`, { method: 'DELETE' }),
+
   // --- checklist ---
   getChecklist: () => request('/checklist'),
   upsertItem: (itemId, payload) =>

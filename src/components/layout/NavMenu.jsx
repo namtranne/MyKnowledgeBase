@@ -17,6 +17,9 @@ export default function NavMenu({ onNavigate }) {
       <NavLink to="/interview-checklist" className="nav-menu__link" onClick={onNavigate}>
         🎯 Interview Checklist
       </NavLink>
+      <NavLink to="/mock-interview" className="nav-menu__link" onClick={onNavigate}>
+        🤖 Mock Interview
+      </NavLink>
     </nav>
   );
 }
