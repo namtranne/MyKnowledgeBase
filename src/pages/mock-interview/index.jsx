@@ -3,6 +3,8 @@ import Layout from '../../compat/Layout.jsx';
 import styles from './styles.module.css';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import { api } from '../../api/client.js';
+import { useUserState } from '../../auth/UserStateContext.jsx';
+import { useSpeaker, useDictation } from './useVoice.js';
 
 const LEVELS = ['Intern', 'Junior', 'Mid', 'Senior', 'Staff', 'Principal'];
 const TYPES = [
@@ -176,6 +178,50 @@ function CodeEditor({ value, onChange, language, onLanguageChange, disabled, onS
           disabled={disabled}
           rows={12}
         />
+      </div>
+    </div>
+  );
+}
+
+// ─── Interviewer avatar ──────────────────────────────────────────────────────
+// Emoji face that "talks" (mouth alternates) while the voice is playing,
+// ponders while the AI is generating, and leans in while you're speaking.
+function InterviewerAvatar({ mode }) {
+  const [frame, setFrame] = useState(0);
+  useEffect(() => {
+    if (mode !== 'speaking') return;
+    const t = setInterval(() => setFrame((f) => (f + 1) % 4), 140);
+    return () => clearInterval(t);
+  }, [mode]);
+
+  const TALK = ['😮', '🙂', '😯', '😐'];
+  const face =
+    mode === 'speaking' ? TALK[frame]
+    : mode === 'thinking' ? '🤔'
+    : mode === 'listening' ? '🧐'
+    : '🙂';
+  const label =
+    mode === 'speaking' ? 'Speaking…'
+    : mode === 'thinking' ? 'Thinking…'
+    : mode === 'listening' ? 'Listening to you…'
+    : 'Waiting for your answer';
+
+  return (
+    <div className={`${styles.avatar} ${styles['avatar_' + mode] || ''}`} aria-live="polite">
+      <div className={styles.avatarFace}>
+        <span className={styles.avatarRing} />
+        <span className={styles.avatarEmoji} role="img" aria-label="Interviewer">{face}</span>
+      </div>
+      <div className={styles.avatarInfo}>
+        <span className={styles.avatarName}>Interviewer</span>
+        <span className={styles.avatarStatus}>
+          {mode === 'speaking' && (
+            <span className={styles.wave} aria-hidden="true">
+              <i /><i /><i /><i />
+            </span>
+          )}
+          {label}
+        </span>
       </div>
     </div>
   );
@@ -481,6 +527,14 @@ function Live({ session, onEnded }) {
   );
   const [answer, setAnswer] = useState('');
   const isCoding = session.interviewType === 'live-coding';
+
+  // ── voice: interviewer TTS + candidate dictation (browser APIs, free)
+  const [voiceOn, setVoiceOn] = useUserState('interview:voice-on', true);
+  const speaker = useSpeaker();
+  const dictation = useDictation({
+    onFinal: (t) => t && setAnswer((a) => (a.trim() ? a.replace(/\s*$/, ' ') : '') + t),
+  });
+  const lastSpokenRef = useRef(-1);
   const [code, setCode] = useState('');
   const [codeLang, setCodeLang] = useState('python');
   const [thinking, setThinking] = useState(false);
@@ -492,6 +546,42 @@ function Live({ session, onEnded }) {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, thinking]);
+
+  // Read each new interviewer message aloud.
+  useEffect(() => {
+    const i = messages.length - 1;
+    const last = messages[i];
+    if (!last || last.sender !== 'interviewer' || i <= lastSpokenRef.current) return;
+    lastSpokenRef.current = i;
+    if (voiceOn && !dictation.listening) speaker.speak(last.content);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
+
+  const toggleVoice = () => {
+    if (voiceOn) speaker.stop();
+    setVoiceOn(!voiceOn);
+  };
+
+  const replay = () => {
+    const last = [...messages].reverse().find((m) => m.sender === 'interviewer');
+    if (last) speaker.speak(last.content);
+  };
+
+  const toggleMic = () => {
+    if (dictation.listening) dictation.stop();
+    else {
+      speaker.stop(); // barge-in: stop the interviewer when you start talking
+      dictation.start();
+    }
+  };
+
+  const avatarMode = thinking
+    ? 'thinking'
+    : speaker.speaking
+      ? 'speaking'
+      : dictation.listening
+        ? 'listening'
+        : 'idle';
 
   // Countdown; auto-finish at zero.
   useEffect(() => {
@@ -523,6 +613,8 @@ function Live({ session, onEnded }) {
       .filter(Boolean)
       .join('\n\n');
     if (!text || thinking || endedRef.current) return;
+    dictation.stop();
+    speaker.stop();
     setError('');
     setAnswer('');
     const newMsgs = [...messages, { sender: 'candidate', content: text }];
@@ -552,12 +644,14 @@ function Live({ session, onEnded }) {
     }
     // Sent successfully: keep the code (candidates often iterate on it) —
     // they can clear it with the button.
-  }, [answer, code, codeLang, isCoding, thinking, messages, session.id, onEnded]);
+  }, [answer, code, codeLang, isCoding, thinking, messages, session.id, onEnded, dictation, speaker]);
 
   async function endNow() {
     if (endedRef.current) return;
     if (!window.confirm('End the interview now and see your results?')) return;
     endedRef.current = true;
+    dictation.stop();
+    speaker.stop();
     setThinking(true);
     try {
       const result = await api.finishInterview(session.id);
@@ -579,6 +673,32 @@ function Live({ session, onEnded }) {
         </span>
         <span className={`${styles.timer} ${low ? styles.timerLow : ''}`}>⏱ {fmt(remaining)}</span>
         <button className={styles.endBtn} onClick={endNow}>End</button>
+      </div>
+
+      <div className={styles.stage}>
+        <InterviewerAvatar mode={avatarMode} />
+        <div className={styles.voiceControls}>
+          {speaker.supported ? (
+            <>
+              <button
+                type="button"
+                className={`${styles.voiceBtn} ${voiceOn ? styles.voiceBtnOn : ''}`}
+                onClick={toggleVoice}
+                title={voiceOn ? 'Mute interviewer voice' : 'Read questions aloud'}>
+                {voiceOn ? '🔊 Voice on' : '🔇 Voice off'}
+              </button>
+              <button
+                type="button"
+                className={styles.voiceBtn}
+                onClick={speaker.speaking ? speaker.stop : replay}
+                title={speaker.speaking ? 'Stop speaking' : 'Repeat the last question'}>
+                {speaker.speaking ? '⏹ Stop' : '🔁 Repeat'}
+              </button>
+            </>
+          ) : (
+            <span className={styles.hint}>Voice playback isn’t supported in this browser.</span>
+          )}
+        </div>
       </div>
 
       <div className={styles.chat}>
@@ -643,6 +763,17 @@ function Live({ session, onEnded }) {
           rows={3}
           disabled={thinking || remaining <= 0}
         />
+        {dictation.supported && (
+          <button
+            type="button"
+            className={`${styles.micBtn} ${dictation.listening ? styles.micBtnOn : ''}`}
+            onClick={toggleMic}
+            disabled={thinking || remaining <= 0}
+            title={dictation.listening ? 'Stop voice input' : 'Answer by voice'}
+            aria-pressed={dictation.listening}>
+            {dictation.listening ? '⏹' : '🎤'}
+          </button>
+        )}
         <button
           className={styles.sendBtn}
           onClick={send}
@@ -650,6 +781,18 @@ function Live({ session, onEnded }) {
           Send
         </button>
       </div>
+      {dictation.listening && (
+        <div className={styles.dictation}>
+          <span className={styles.recDot} /> Listening — speak your answer, then press Send.
+          {dictation.interim && <em className={styles.interim}> {dictation.interim}</em>}
+        </div>
+      )}
+      {dictation.error && <div className={styles.error}>{dictation.error}</div>}
+      {!dictation.supported && (
+        <span className={styles.hint}>
+          Voice answers need Chrome, Edge or Safari — Firefox doesn’t support speech recognition.
+        </span>
+      )}
     </div>
   );
 }

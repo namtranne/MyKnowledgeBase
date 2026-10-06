@@ -559,3 +559,172 @@
   gap: 0.8rem;
   margin-top: -0.4rem;
 }
+
+/* ── Interviewer avatar + voice ── */
+.stage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  background: #12141f;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 0.8rem 1rem;
+}
+.avatar {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+.avatarFace {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+}
+.avatarEmoji {
+  font-size: 2.6rem;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+  transition: transform 0.15s;
+}
+.avatarRing {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.25), rgba(0, 240, 255, 0.08) 70%);
+  border: 2px solid rgba(168, 85, 247, 0.35);
+}
+.avatar_speaking .avatarRing {
+  animation: avatarPulse 1s ease-out infinite;
+  border-color: #00f0ff;
+}
+.avatar_speaking .avatarEmoji {
+  transform: scale(1.06);
+}
+.avatar_thinking .avatarEmoji {
+  animation: avatarTilt 1.6s ease-in-out infinite;
+}
+.avatar_listening .avatarRing {
+  border-color: #34d399;
+  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.15);
+}
+@keyframes avatarPulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 240, 255, 0.45); }
+  100% { box-shadow: 0 0 0 14px rgba(0, 240, 255, 0); }
+}
+@keyframes avatarTilt {
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(6deg); }
+}
+.avatarInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.avatarName {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #e5e7eb;
+}
+.avatarStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+.wave {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+.wave i {
+  width: 3px;
+  height: 100%;
+  background: #00f0ff;
+  border-radius: 2px;
+  animation: waveBar 0.9s ease-in-out infinite;
+}
+.wave i:nth-child(2) { animation-delay: 0.15s; }
+.wave i:nth-child(3) { animation-delay: 0.3s; }
+.wave i:nth-child(4) { animation-delay: 0.45s; }
+@keyframes waveBar {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+.voiceControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.voiceBtn {
+  background: transparent;
+  color: #9ca3af;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.voiceBtn:hover {
+  color: #e5e7eb;
+}
+.voiceBtnOn {
+  color: #e5e7eb;
+  border-color: rgba(0, 240, 255, 0.5);
+}
+.micBtn {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #0c0e17;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+.micBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.micBtnOn {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+  animation: micPulse 1.4s ease-out infinite;
+}
+@keyframes micPulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45); }
+  100% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+}
+.dictation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+.recDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: micPulse 1.4s ease-out infinite;
+}
+.interim {
+  color: #6b7280;
+}
+@media (prefers-reduced-motion: reduce) {
+  .avatar_speaking .avatarRing,
+  .avatar_thinking .avatarEmoji,
+  .wave i,
+  .micBtnOn,
+  .recDot {
+    animation: none;
+  }
+}
