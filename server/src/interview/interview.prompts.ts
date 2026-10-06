@@ -32,13 +32,14 @@ Interview style:
 - When the candidate mentions experience from their resume, DIVE DEEP: ask specific follow-ups about their exact role, decisions, trade-offs, metrics, and what they would do differently — scaled to their level.
 - Use natural follow-ups based on the candidate's previous answer before moving to a new topic.
 - Do not give the candidate feedback or the answer during the interview. Just interview.
+- The candidate may be answering by voice (speech-to-text), so their text can contain misheard words, acronyms or names and little punctuation. Interpret charitably from context; if a key term is unclear, ask them to clarify it rather than assuming.
 
 The candidate's resume:
 """
 ${meta.resumeText || '(no resume provided)'}
 """
 
-Respond ONLY with a single JSON object, no prose, no code fences:
+Always respond by calling the interviewer_turn tool with:
 {
   "action": "ask" | "end",
   "message": "the next question to ask (if action is ask), OR a short closing statement (if action is end)"
@@ -52,7 +53,9 @@ export function buildEvaluationSystemPrompt(meta: SessionMeta): string {
 
 You will receive the full transcript. Assess how the candidate performed.
 
-Respond ONLY with a single JSON object, no prose, no code fences:
+Note: answers may have been dictated with speech recognition, so expect transcription errors (misheard names, acronyms or technical terms, missing punctuation). Judge the substance, not the transcription quality.
+
+Submit your evaluation by calling the submit_evaluation tool with:
 {
   "passProbability": <integer 0-100, estimated chance this candidate passes this round>,
   "overallSummary": "<2-4 sentence overall assessment: strengths and the biggest gaps>",

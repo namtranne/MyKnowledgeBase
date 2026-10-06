@@ -22,12 +22,89 @@ interface InterviewerReply {
   message: string;
 }
 
+interface Evaluation {
+  passProbability: number;
+  overallSummary: string;
+  answers: {
+    question: string;
+    answer: string;
+    assessment: string;
+    improvement: string;
+  }[];
+}
+
+// Forced-tool schemas: the model must return exactly these shapes.
+const INTERVIEWER_TOOL = {
+  name: 'interviewer_turn',
+  description:
+    'Say the next thing to the candidate: either ask the next question / follow-up, or end the interview with a short closing statement.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      action: { type: 'string', enum: ['ask', 'end'] },
+      message: {
+        type: 'string',
+        description: 'The question to ask (action=ask) or the closing statement (action=end).',
+      },
+    },
+    required: ['action', 'message'],
+  },
+};
+
+const EVALUATION_TOOL = {
+  name: 'submit_evaluation',
+  description: 'Submit the scored evaluation of the completed interview.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      passProbability: {
+        type: 'integer',
+        minimum: 0,
+        maximum: 100,
+        description: 'Estimated chance (0-100) that the candidate passes this round.',
+      },
+      overallSummary: { type: 'string' },
+      answers: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            question: { type: 'string' },
+            answer: { type: 'string' },
+            assessment: { type: 'string' },
+            improvement: { type: 'string' },
+          },
+          required: ['question', 'answer', 'assessment', 'improvement'],
+        },
+      },
+    },
+    required: ['passProbability', 'overallSummary', 'answers'],
+  },
+};
+
 @Injectable()
 export class InterviewService {
   constructor(
     private prisma: PrismaService,
     private ai: AnthropicService,
   ) {}
+
+  private async interviewerTurn(
+    system: string,
+    messages: { role: 'user' | 'assistant'; content: string }[],
+  ): Promise<InterviewerReply> {
+    const r = await this.ai.chatTool<Partial<InterviewerReply>>(
+      system,
+      messages,
+      INTERVIEWER_TOOL,
+      1024,
+    );
+    const message = typeof r.message === 'string' ? r.message.trim() : '';
+    if (!message) {
+      throw new BadRequestException('The interviewer had nothing to say — please try again');
+    }
+    return { action: r.action === 'end' ? 'end' : 'ask', message };
+  }
 
   private metaOf(s: {
     role: string;
@@ -77,7 +154,7 @@ export class InterviewService {
 
     // Ask the AI for the opening question.
     const system = buildInterviewerSystemPrompt(this.metaOf(session));
-    const reply = await this.ai.chatJson<InterviewerReply>(system, [
+    const reply = await this.interviewerTurn(system, [
       { role: 'user', content: KICKOFF_MESSAGE },
     ]);
 
@@ -113,16 +190,23 @@ export class InterviewService {
       throw new BadRequestException('This interview has already ended');
     }
 
-    const nextOrder = session.messages.length;
-    // Persist the candidate's answer.
-    await this.prisma.interviewMessage.create({
-      data: {
-        sessionId: session.id,
-        sender: 'candidate',
-        content: answer,
-        order: nextOrder,
-      },
-    });
+    // If the previous attempt saved this answer but the AI call failed, the
+    // client retries with the same text — don't store it twice.
+    const lastMsg = session.messages[session.messages.length - 1];
+    const isRetry =
+      lastMsg?.sender === 'candidate' && lastMsg.content === answer;
+    const prior = isRetry ? session.messages.slice(0, -1) : session.messages;
+    const nextOrder = prior.length;
+    if (!isRetry) {
+      await this.prisma.interviewMessage.create({
+        data: {
+          sessionId: session.id,
+          sender: 'candidate',
+          content: answer,
+          order: nextOrder,
+        },
+      });
+    }
 
     // If time is up, end the interview and evaluate.
     if (this.secondsRemaining(session) <= 0) {
@@ -133,11 +217,11 @@ export class InterviewService {
     // Otherwise ask the AI for the next question.
     const history = [
       { role: 'user' as const, content: KICKOFF_MESSAGE },
-      ...this.toClaudeMessages(session.messages),
+      ...this.toClaudeMessages(prior),
       { role: 'user' as const, content: answer },
     ];
     const system = buildInterviewerSystemPrompt(this.metaOf(session));
-    const reply = await this.ai.chatJson<InterviewerReply>(system, history);
+    const reply = await this.interviewerTurn(system, history);
 
     if (reply.action === 'end') {
       // record the closing line, then evaluate
@@ -193,21 +277,19 @@ export class InterviewService {
       .join('\n\n');
 
     const system = buildEvaluationSystemPrompt(this.metaOf(session));
-    const evaluation = await this.ai.chatJson<{
-      passProbability: number;
-      overallSummary: string;
-      answers: {
-        question: string;
-        answer: string;
-        assessment: string;
-        improvement: string;
-      }[];
-    }>(system, [
-      {
-        role: 'user',
-        content: `Here is the full interview transcript. Score it.\n\n${transcript}`,
-      },
-    ]);
+    // Generous token budget: per-answer feedback for ~12 questions is long,
+    // and a truncated reply was another way to get "unexpected format".
+    const evaluation = await this.ai.chatTool<Evaluation>(
+      system,
+      [
+        {
+          role: 'user',
+          content: `Here is the full interview transcript. Score it.\n\n${transcript}`,
+        },
+      ],
+      EVALUATION_TOOL,
+      6000,
+    );
 
     const pass = Math.max(
       0,

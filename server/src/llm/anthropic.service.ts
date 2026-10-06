@@ -48,6 +48,47 @@ export class AnthropicService {
   }
 
   /**
+   * Structured output via forced tool use: Claude must call `tool`, and its
+   * validated `input` object is returned. Far more reliable than asking for
+   * JSON in prose — the model can't drift into plain-text replies.
+   */
+  async chatTool<T = any>(
+    system: string,
+    messages: { role: 'user' | 'assistant'; content: string }[],
+    tool: { name: string; description: string; input_schema: Record<string, any> },
+    maxTokens = 2048,
+  ): Promise<T> {
+    const client = this.getClient();
+    let res: Anthropic.Message;
+    try {
+      res = await client.messages.create({
+        model: this.model,
+        max_tokens: maxTokens,
+        system,
+        messages,
+        tools: [tool as any],
+        tool_choice: { type: 'tool', name: tool.name },
+      });
+    } catch (err) {
+      this.logger.error(`Anthropic request failed: ${err?.message || err}`);
+      throw new InternalServerErrorException('AI request failed');
+    }
+    const block = res.content.find((b) => b.type === 'tool_use') as
+      | { type: 'tool_use'; input: unknown }
+      | undefined;
+    if (!block || !block.input || typeof block.input !== 'object') {
+      this.logger.error(
+        `No tool_use block (stop_reason=${res.stop_reason}): ${JSON.stringify(res.content).slice(0, 500)}`,
+      );
+      throw new InternalServerErrorException('AI returned an unexpected format');
+    }
+    if (res.stop_reason === 'max_tokens') {
+      this.logger.warn(`Tool output hit max_tokens (${maxTokens}); result may be truncated`);
+    }
+    return block.input as T;
+  }
+
+  /**
    * Same as chat(), but parses the reply as JSON. Tolerates code fences and
    * surrounding prose by extracting the first {...} block.
    */
