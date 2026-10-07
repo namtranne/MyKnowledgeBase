@@ -1,9 +1,23 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useContext,
+  createContext,
+} from 'react';
 import Layout from '../../compat/Layout.jsx';
 import styles from './styles.module.css';
 import { CATEGORIES, TOPICS_DATA } from './_topics-data';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import { api } from '../../api/client.js';
+import { useUserState } from '../../auth/UserStateContext.jsx';
+import { useDictation, useAiDictation } from '../mock-interview/useVoice.js';
+
+const GRADE_LEVELS = ['Intern', 'Junior', 'Mid', 'Senior', 'Staff', 'Principal'];
+
+// Shared by every AnswerBox: grading, voice config, auth.
+const AnswerCtx = createContext(null);
 
 const STORAGE_KEY_PREFIX = 'interview-checklist-v1';
 const ANSWERS_KEY_PREFIX = 'interview-checklist-answers-v1';
@@ -95,13 +109,104 @@ function ProgressRing({ pct, color }) {
 }
 
 // ─── Answer box ──────────────────────────────────────────────────────────────
-// Expandable per-question answer field. Enter saves (Shift+Enter = newline);
-// a Save button is also provided. Persists to the server when signed in.
+// Expandable per-question answer: type or dictate, save, and get AI feedback.
 
-function AnswerBox({ itemId, value, onSave }) {
-  const [open, setOpen] = useState(!!value);
+// Plain text with ```code``` fences rendered as code blocks.
+function RichText({ text, className }) {
+  const parts = [];
+  const re = /```([\w+#.-]*)\n?([\s\S]*?)```/g;
+  let last = 0;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) parts.push({ code: false, v: text.slice(last, m.index) });
+    parts.push({ code: true, v: m[2].replace(/\n$/, '') });
+    last = re.lastIndex;
+  }
+  if (last < text.length) parts.push({ code: false, v: text.slice(last) });
+  return (
+    <div className={className}>
+      {parts.map((p, i) =>
+        p.code ? (
+          <pre key={i} className={styles.fbCode}><code>{p.v}</code></pre>
+        ) : (
+          <span key={i}>{p.v.replace(/^\n+|\n+$/g, '')}</span>
+        )
+      )}
+    </div>
+  );
+}
+
+const VERDICT = {
+  strong: { label: 'Strong', color: '#34d399' },
+  good: { label: 'Good', color: '#60a5fa' },
+  'needs-work': { label: 'Needs work', color: '#f59e0b' },
+  weak: { label: 'Weak', color: '#ef4444' },
+};
+
+function scoreColor(score) {
+  return score >= 8 ? '#34d399' : score >= 6 ? '#60a5fa' : score >= 4 ? '#f59e0b' : '#ef4444';
+}
+
+function FeedbackList({ title, items, icon }) {
+  if (!items || !items.length) return null;
+  return (
+    <div className={styles.fbBlock}>
+      <span className={styles.fbBlockTitle}>{title}</span>
+      <ul className={styles.fbList}>
+        {items.map((t, i) => (
+          <li key={i}><span className={styles.fbIcon}>{icon}</span>{t}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function FeedbackPanel({ fb, gradedAt, stale }) {
+  const v = VERDICT[fb.verdict] || VERDICT['needs-work'];
+  return (
+    <div className={styles.fbPanel}>
+      <div className={styles.fbHead}>
+        <span className={styles.fbScore} style={{ color: scoreColor(fb.score), borderColor: scoreColor(fb.score) }}>
+          {fb.score}<small>/10</small>
+        </span>
+        <div className={styles.fbHeadText}>
+          <span className={styles.fbVerdict} style={{ color: v.color }}>
+            {v.label}
+            <span className={styles.fbLevel}> · judged at {fb.level || 'Mid'} level</span>
+          </span>
+          {fb.summary && <span className={styles.fbSummary}>{fb.summary}</span>}
+        </div>
+      </div>
+      {stale && (
+        <div className={styles.fbStale}>
+          You’ve changed your answer since this feedback — grade again to update it.
+        </div>
+      )}
+      <FeedbackList title="What worked" items={fb.strengths} icon="✓" />
+      <FeedbackList title="Gaps" items={fb.gaps} icon="△" />
+      <FeedbackList title="Missing or incorrect" items={fb.missingPoints} icon="✗" />
+      {fb.modelAnswer && (
+        <details className={styles.fbDetails}>
+          <summary>Show a strong answer outline</summary>
+          <RichText text={fb.modelAnswer} className={styles.fbModel} />
+        </details>
+      )}
+      <FeedbackList title="Likely follow-up questions" items={fb.followUpQuestions} icon="→" />
+      <FeedbackList title="English tips" items={fb.languageTips} icon="✎" />
+      {gradedAt && (
+        <span className={styles.fbMeta}>Graded {new Date(gradedAt).toLocaleString()}</span>
+      )}
+    </div>
+  );
+}
+
+function AnswerEditor({ item, sectionTitle, value, onSave }) {
+  const ctx = useContext(AnswerCtx);
+  const graded = ctx.feedbackFor(item.id);
   const [draft, setDraft] = useState(value || '');
   const [status, setStatus] = useState('idle'); // idle | saving | saved | error
+  const [grading, setGrading] = useState(false);
+  const [gradeError, setGradeError] = useState('');
 
   // Keep the draft in sync if the stored value changes (e.g. after login sync).
   useEffect(() => {
@@ -110,8 +215,22 @@ function AnswerBox({ itemId, value, onSave }) {
 
   const dirty = draft !== (value || '');
 
+  // ── voice input
+  const append = useCallback(
+    (t) => t && setDraft((d) => (d.trim() ? d.replace(/\s*$/, ' ') : '') + t),
+    []
+  );
+  const hint = `Interview answer. Question: ${item.name}${item.note ? `. ${item.note}` : ''}`;
+  const browserDictation = useDictation({ onFinal: append });
+  const aiDictation = useAiDictation({
+    transcribe: (blob) => api.transcribeVoice(blob, hint),
+    onFinal: append,
+  });
+  const dictation = ctx.aiStt && aiDictation.supported ? aiDictation : browserDictation;
+  const voiceBusy = dictation.listening || dictation.busy;
+
   async function commit() {
-    if (!dirty) return;
+    if (!dirty || voiceBusy) return;
     setStatus('saving');
     try {
       await onSave(draft);
@@ -122,12 +241,108 @@ function AnswerBox({ itemId, value, onSave }) {
     }
   }
 
+  async function grade() {
+    if (!ctx.isAuthenticated) {
+      ctx.openAuth();
+      return;
+    }
+    const text = draft.trim();
+    if (!text || grading || voiceBusy) return;
+    setGrading(true);
+    setGradeError('');
+    try {
+      await ctx.grade(item.id, {
+        question: item.name,
+        note: item.note || undefined,
+        section: sectionTitle || undefined,
+        answer: text,
+      });
+    } catch (err) {
+      setGradeError(err.message || 'Could not grade this answer');
+    } finally {
+      setGrading(false);
+    }
+  }
+
   function handleKeyDown(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       commit();
     }
   }
+
+  const stale = graded && graded.feedback?.gradedAnswer !== undefined
+    && graded.feedback.gradedAnswer.trim() !== draft.trim();
+
+  return (
+    <div className={styles.answerBody}>
+      <textarea
+        className={styles.answerInput}
+        value={draft}
+        placeholder="Write or dictate your answer… (Enter to save, Shift+Enter for a new line)"
+        onChange={(e) => {
+          setDraft(e.target.value);
+          if (status !== 'idle') setStatus('idle');
+        }}
+        onKeyDown={handleKeyDown}
+        rows={4}
+      />
+      {dictation.listening && (
+        <div className={styles.dictationNote}>
+          <span className={styles.recDot} />
+          {dictation.ai
+            ? `Recording ${Math.floor(dictation.elapsed / 60)}:${String(dictation.elapsed % 60).padStart(2, '0')} — press ⏹ when done`
+            : 'Listening… press ⏹ when done'}
+          {dictation.interim && <em className={styles.interim}> {dictation.interim}</em>}
+        </div>
+      )}
+      {dictation.busy && <div className={styles.dictationNote}>✨ Transcribing…</div>}
+      {dictation.error && <span className={styles.answerError}>{dictation.error}</span>}
+
+      <div className={styles.answerActions}>
+        <button
+          type="button"
+          className={styles.answerSaveBtn}
+          onClick={commit}
+          disabled={!dirty || status === 'saving' || voiceBusy}>
+          {status === 'saving' ? 'Saving…' : 'Save'}
+        </button>
+        {(dictation.supported || ctx.aiStt) && (
+          <button
+            type="button"
+            className={`${styles.micBtn} ${dictation.listening ? styles.micBtnOn : ''}`}
+            onClick={() => (dictation.listening ? dictation.stop() : dictation.start())}
+            disabled={dictation.busy || grading}
+            title={dictation.listening ? 'Stop' : 'Answer by voice'}
+            aria-pressed={dictation.listening}>
+            {dictation.listening ? '⏹' : '🎤'}
+          </button>
+        )}
+        <button
+          type="button"
+          className={styles.gradeBtn}
+          onClick={grade}
+          disabled={grading || voiceBusy || (ctx.isAuthenticated && !draft.trim())}
+          title={ctx.isAuthenticated ? 'Get AI feedback on this answer' : 'Sign in to get AI feedback'}>
+          {grading ? 'Grading…' : graded ? '✨ Grade again' : '✨ Grade with AI'}
+        </button>
+        {status === 'saved' && <span className={styles.answerSaved}>✓ Saved</span>}
+        {status === 'error' && <span className={styles.answerError}>Couldn’t save</span>}
+        {gradeError && <span className={styles.answerError}>{gradeError}</span>}
+      </div>
+
+      {graded?.feedback && (
+        <FeedbackPanel fb={graded.feedback} gradedAt={graded.gradedAt} stale={stale} />
+      )}
+    </div>
+  );
+}
+
+function AnswerBox({ item, sectionTitle, value, onSave }) {
+  const ctx = useContext(AnswerCtx);
+  const graded = ctx.feedbackFor(item.id);
+  const [open, setOpen] = useState(!!value);
+  const score = graded?.feedback?.score;
 
   return (
     <div className={styles.answerWrap}>
@@ -138,35 +353,15 @@ function AnswerBox({ itemId, value, onSave }) {
         <span className={styles.answerChevron}>{open ? '▾' : '▸'}</span>
         {value ? 'Your answer' : 'Add answer'}
         {value && !open && <span className={styles.answerBadge}>saved</span>}
+        {typeof score === 'number' && (
+          <span className={styles.scoreBadge} style={{ color: scoreColor(score), borderColor: scoreColor(score) }}>
+            AI {score}/10
+          </span>
+        )}
       </button>
 
       {open && (
-        <div className={styles.answerBody}>
-          <textarea
-            className={styles.answerInput}
-            value={draft}
-            placeholder="Write your answer… (Enter to save, Shift+Enter for a new line)"
-            onChange={(e) => {
-              setDraft(e.target.value);
-              if (status !== 'idle') setStatus('idle');
-            }}
-            onKeyDown={handleKeyDown}
-            rows={3}
-          />
-          <div className={styles.answerActions}>
-            <button
-              type="button"
-              className={styles.answerSaveBtn}
-              onClick={commit}
-              disabled={!dirty || status === 'saving'}>
-              {status === 'saving' ? 'Saving…' : 'Save'}
-            </button>
-            {status === 'saved' && <span className={styles.answerSaved}>✓ Saved</span>}
-            {status === 'error' && (
-              <span className={styles.answerError}>Couldn’t save</span>
-            )}
-          </div>
-        </div>
+        <AnswerEditor item={item} sectionTitle={sectionTitle} value={value} onSave={onSave} />
       )}
     </div>
   );
@@ -205,6 +400,7 @@ function Section({ section, color, progress, answers, onToggle, onSaveAnswer }) 
               checked={!!progress[item.id]}
               answer={answers[item.id] || ''}
               onToggle={() => onToggle(item.id)}
+              sectionTitle={section.title}
               onSaveAnswer={(text) => onSaveAnswer(item.id, text)}
             />
           ))}
@@ -216,7 +412,7 @@ function Section({ section, color, progress, answers, onToggle, onSaveAnswer }) 
 
 // ─── Checklist Item ────────────────────────────────────────────────────────────
 
-function ChecklistItem({ item, checked, answer, onToggle, onSaveAnswer }) {
+function ChecklistItem({ item, checked, answer, sectionTitle, onToggle, onSaveAnswer }) {
   return (
     <div className={styles.checklistItem}>
       <input
@@ -235,7 +431,7 @@ function ChecklistItem({ item, checked, answer, onToggle, onSaveAnswer }) {
         {item.note && (
           <p className={styles.itemNote}>{item.note}</p>
         )}
-        <AnswerBox itemId={item.id} value={answer} onSave={onSaveAnswer} />
+        <AnswerBox item={item} sectionTitle={sectionTitle} value={answer} onSave={onSaveAnswer} />
       </div>
       {item.resource && (
         <a
@@ -258,6 +454,25 @@ export default function InterviewChecklist() {
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0].id);
   const [progressMap, setProgressMap] = useState({});
   const [answersMap, setAnswersMap] = useState({});
+  const [feedbackMap, setFeedbackMap] = useState({}); // { cat: { itemId: { feedback, gradedAt } } }
+  const [gradeLevel, setGradeLevel] = useUserState('checklist:grade-level', 'Mid');
+  const [aiStt, setAiStt] = useState(false);
+
+  // AI transcription is available only when signed in and configured on the server.
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setAiStt(false);
+      return;
+    }
+    let cancelled = false;
+    api
+      .getVoiceConfig()
+      .then((c) => !cancelled && setAiStt(!!c?.aiTranscription))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated]);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
 
@@ -281,17 +496,21 @@ export default function InterviewChecklist() {
           if (cancelled) return;
           const p = {};
           const a = {};
+          const f = {};
           CATEGORIES.forEach((cat) => {
             p[cat.id] = {};
             a[cat.id] = {};
+            f[cat.id] = {};
             const items = grouped[cat.id] || {};
             Object.entries(items).forEach(([itemId, s]) => {
               p[cat.id][itemId] = !!s.checked;
               if (s.answer) a[cat.id][itemId] = s.answer;
+              if (s.feedback) f[cat.id][itemId] = { feedback: s.feedback, gradedAt: s.gradedAt };
             });
           });
           setProgressMap(p);
           setAnswersMap(a);
+          setFeedbackMap(f);
           return;
         } catch {
           // fall through to local storage if the API is unreachable
@@ -306,6 +525,7 @@ export default function InterviewChecklist() {
       if (!cancelled) {
         setProgressMap(p);
         setAnswersMap(a);
+        setFeedbackMap({});
       }
     }
 
@@ -436,6 +656,7 @@ export default function InterviewChecklist() {
     }
     setProgressMap((prev) => ({ ...prev, [activeCategory]: {} }));
     setAnswersMap((prev) => ({ ...prev, [activeCategory]: {} }));
+    setFeedbackMap((prev) => ({ ...prev, [activeCategory]: {} }));
     if (isAuthenticated) {
       api.resetCategory(activeCategory).catch(() => {});
     } else {
@@ -443,6 +664,40 @@ export default function InterviewChecklist() {
       saveAnswers(activeCategory, {});
     }
   }, [activeCategory, categoryConfig.label, isAuthenticated]);
+
+  const grade = useCallback(
+    async (itemId, payload) => {
+      const res = await api.gradeChecklistItem(itemId, {
+        categoryId: activeCategory,
+        level: gradeLevel,
+        ...payload,
+      });
+      setAnswersMap((prev) => ({
+        ...prev,
+        [activeCategory]: { ...(prev[activeCategory] || {}), [itemId]: res.answer },
+      }));
+      setFeedbackMap((prev) => ({
+        ...prev,
+        [activeCategory]: {
+          ...(prev[activeCategory] || {}),
+          [itemId]: { feedback: res.feedback, gradedAt: res.gradedAt },
+        },
+      }));
+      return res;
+    },
+    [activeCategory, gradeLevel]
+  );
+
+  const answerCtx = useMemo(
+    () => ({
+      isAuthenticated,
+      openAuth,
+      aiStt,
+      grade,
+      feedbackFor: (itemId) => (feedbackMap[activeCategory] || {})[itemId] || null,
+    }),
+    [isAuthenticated, openAuth, aiStt, grade, feedbackMap, activeCategory]
+  );
 
   const cssVarColor = categoryConfig.color;
   const tabStyle = {
@@ -454,6 +709,7 @@ export default function InterviewChecklist() {
   const actualPct = totalItems > 0 ? Math.round((solvedItems / totalItems) * 100) : 0;
 
   return (
+    <AnswerCtx.Provider value={answerCtx}>
     <Layout
       title="Interview Checklist"
       description="Comprehensive interview preparation checklist — track your progress across all topics">
@@ -540,6 +796,14 @@ export default function InterviewChecklist() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          <label className={styles.levelPicker} title="Seniority level the AI grades your answers against">
+            AI grading level
+            <select value={gradeLevel} onChange={(e) => setGradeLevel(e.target.value)}>
+              {GRADE_LEVELS.map((l) => (
+                <option key={l} value={l}>{l}</option>
+              ))}
+            </select>
+          </label>
         </div>
 
         {searchActive ? (
@@ -582,7 +846,8 @@ export default function InterviewChecklist() {
                         )}
                       </div>
                       <AnswerBox
-                        itemId={item.id}
+                        item={item}
+                        sectionTitle={sec.title}
                         value={answers[item.id] || ''}
                         onSave={(text) => saveAnswer(item.id, text)}
                       />
@@ -614,5 +879,6 @@ export default function InterviewChecklist() {
         </div>
       </div>
     </Layout>
+    </AnswerCtx.Provider>
   );
 }

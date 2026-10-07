@@ -313,6 +313,39 @@ export class InterviewService {
     return { passProbability: pass, ...summary };
   }
 
+  // Context prompt for speech-to-text: role, distinctive resume terms
+  // (acronyms, product/tech names) and the question being answered.
+  async transcriptionHint(userId: string, sessionId: string): Promise<string> {
+    const session = await this.prisma.interviewSession.findFirst({
+      where: { id: sessionId, userId },
+      include: { messages: { orderBy: { order: 'desc' }, take: 1 } },
+    });
+    if (!session) throw new NotFoundException('Interview not found');
+
+    const STOP = new Set(['The', 'And', 'For', 'With', 'From', 'This', 'That', 'Our', 'Responsible', 'Developed', 'Worked', 'Led', 'Built', 'Used', 'Experience', 'Skills', 'Education', 'Summary', 'Present']);
+    const counts = new Map<string, number>();
+    const tokens = (session.resumeText || '').match(/[A-Za-z][A-Za-z0-9+#.\-]*[A-Za-z0-9+#]/g) || [];
+    for (const t of tokens) {
+      // acronyms (NAB, SIT, TLM), CamelCase / capitalised names (Kafka, PostgreSQL), tech with symbols (C#, Node.js)
+      const interesting =
+        /^[A-Z0-9]{2,}$/.test(t) || /[A-Z].*[A-Z]/.test(t) || /^[A-Z][a-z]+/.test(t) || /[+#.]/.test(t);
+      if (!interesting || STOP.has(t) || t.length > 30) continue;
+      counts.set(t, (counts.get(t) || 0) + 1);
+    }
+    const terms = [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 60)
+      .map(([t]) => t);
+
+    const lastQuestion =
+      session.messages[0]?.sender === 'interviewer' ? session.messages[0].content : '';
+
+    let hint = `Job interview answer for a ${session.level} ${session.role} position.`;
+    if (terms.length) hint += ` Terms that may be mentioned: ${terms.join(', ')}.`;
+    if (lastQuestion) hint += ` Question: ${lastQuestion}`;
+    return hint.slice(0, 900);
+  }
+
   async get(userId: string, sessionId: string) {
     const session = await this.prisma.interviewSession.findFirst({
       where: { id: sessionId, userId },

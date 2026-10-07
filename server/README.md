@@ -23,6 +23,9 @@ NestJS + PostgreSQL backend that provides:
 | POST   | `/api/interview/:id/finish`         | JWT  | End early → evaluation (`passProbability`, per-answer feedback) |
 | GET    | `/api/interview/:id`                | JWT  | Full session: transcript + result |
 | GET    | `/api/interview`                    | JWT  | List the user's past interviews |
+| POST   | `/api/checklist/item/:itemId/grade` | JWT  | `{ categoryId, question, note?, section?, answer, level? }` → AI feedback (score, gaps, model answer…); also saves the answer |
+| GET    | `/api/voice/config`                 | JWT  | `{ aiTranscription }` |
+| POST   | `/api/voice/transcribe`             | JWT  | multipart `audio` + optional `hint` → `{ text }` |
 
 Send the token as `Authorization: Bearer <token>`.
 
@@ -34,6 +37,8 @@ The interview feature calls the Anthropic API. Set these env vars:
 
 - `ANTHROPIC_API_KEY` — from https://console.anthropic.com/
 - `ANTHROPIC_MODEL` — optional, defaults to `claude-sonnet-5`; set to whatever model your account supports.
+- `OPENAI_API_KEY` — optional. Enables AI transcription of voice answers (`POST /api/interview/:id/transcribe`, multipart `audio`). Without it the UI falls back to the browser's free speech recognition.
+- `OPENAI_TRANSCRIBE_MODEL` — optional, defaults to `gpt-4o-mini-transcribe` (~$0.003/min); `gpt-4o-transcribe` is more accurate (~$0.006/min).
 
 ## Run locally (Docker — recommended)
 

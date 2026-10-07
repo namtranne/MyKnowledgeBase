@@ -66,6 +66,8 @@ model ItemState {
   itemId     String
   checked    Boolean  @default(false)
   answer     String   @default("")
+  feedback   Json? // latest AI grading of `answer` (see checklist grading)
+  gradedAt   DateTime?
   updatedAt  DateTime @updatedAt
 
   @@unique([userId, itemId])

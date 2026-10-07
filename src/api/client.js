@@ -25,6 +25,32 @@ export function setToken(token) {
   }
 }
 
+// Upload an audio blob (multipart) and return the JSON response.
+async function uploadAudio(path, blob, extraFields = {}) {
+  const type = (blob.type || 'audio/webm').split(';')[0];
+  const ext = type.includes('mp4') ? 'mp4' : type.includes('ogg') ? 'ogg' : 'webm';
+  const form = new FormData();
+  form.append('audio', blob, `answer.${ext}`);
+  for (const [k, v] of Object.entries(extraFields)) if (v) form.append(k, v);
+  const headers = {};
+  const token = getToken();
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${API_URL}${path}`, { method: 'POST', headers, body: form });
+  const text = await res.text();
+  let data = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = text;
+  }
+  if (!res.ok) {
+    const m = (data && (data.message || data.error)) || `Transcription failed (${res.status})`;
+    // eslint-disable-next-line no-use-before-define
+    throw new ApiError(Array.isArray(m) ? m.join(', ') : m, res.status);
+  }
+  return data;
+}
+
 class ApiError extends Error {
   constructor(message, status) {
     super(message);
@@ -108,6 +134,14 @@ export const api = {
     }
     return data;
   },
+  getInterviewConfig: () => request('/interview/config'),
+  // Upload a recorded voice answer; returns { text }.
+  transcribeAnswer: (id, blob) => uploadAudio(`/interview/${id}/transcribe`, blob),
+
+  // --- voice (general) ---
+  getVoiceConfig: () => request('/voice/config'),
+  transcribeVoice: (blob, hint) => uploadAudio('/voice/transcribe', blob, { hint }),
+
   createInterview: (payload) =>
     request('/interview', { method: 'POST', body: payload }),
   answerInterview: (id, answer) =>
@@ -129,6 +163,11 @@ export const api = {
   upsertItem: (itemId, payload) =>
     request(`/checklist/item/${encodeURIComponent(itemId)}`, {
       method: 'PUT',
+      body: payload,
+    }),
+  gradeChecklistItem: (itemId, payload) =>
+    request(`/checklist/item/${encodeURIComponent(itemId)}/grade`, {
+      method: 'POST',
       body: payload,
     }),
   resetCategory: (categoryId) =>

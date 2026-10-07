@@ -10,6 +10,7 @@ export const CATEGORIES = [
   { id: 'behavioural', label: 'Behavioural', color: '#00f0ff' },
   { id: 'experience', label: 'Experience', color: '#a855f7' },
   { id: 'system-design', label: 'System Design', color: '#f472b6' },
+  { id: 'object-design', label: 'Object-Oriented Design', color: '#60a5fa' },
   { id: 'microservices', label: 'Microservices', color: '#34d399' },
   { id: 'databases', label: 'Databases', color: '#f59e0b' },
   { id: 'cs-fundamentals', label: 'CS Fundamentals', color: '#00f0ff' },
@@ -408,7 +409,152 @@ export const TOPICS_DATA = {
   },
 
   // ══════════════════════════════════════════════════════════════════════════════
-  // 4. MICROSERVICES
+  // 4. OBJECT-ORIENTED DESIGN (LOW-LEVEL DESIGN)
+  // ══════════════════════════════════════════════════════════════════════════════
+  'object-design': {
+    sections: [
+      {
+        id: 'ood-approach',
+        title: 'LLD Interview Approach',
+        items: [
+          { id: 'ood1', name: 'Clarify requirements first: core use cases, actors, scope, what is out of scope', note: 'Spend ~5 min. Write the use cases down, e.g. "member borrows a book", "librarian adds a book"' },
+          { id: 'ood2', name: 'Identify the core entities (nouns) and behaviours (verbs) from the use cases', note: 'Nouns → classes/fields, verbs → methods. Drop nouns that are just attributes' },
+          { id: 'ood3', name: 'Define each entity\'s fields, identity and invariants', note: 'e.g. Book { isbn, title, authors[], coverImg, description } — which fields are required, immutable, unique?' },
+          { id: 'ood4', name: 'Define relationships and cardinality: association, aggregation, composition, inheritance', note: '1-1, 1-n, n-n; who owns whose lifecycle?' },
+          { id: 'ood5', name: 'Sketch a class diagram (UML) and explain it while drawing' },
+          { id: 'ood6', name: 'Define the public API / service methods and their signatures', note: 'e.g. LibraryService.checkout(memberId, bookItemId): Loan — inputs, outputs, exceptions' },
+          { id: 'ood7', name: 'Model state transitions with an enum + state machine where an entity has a lifecycle', note: 'e.g. BookItem: AVAILABLE → LOANED → AVAILABLE | LOST; Order: CREATED → PAID → SHIPPED' },
+          { id: 'ood8', name: 'Walk through 1-2 use cases end-to-end against your design (sequence of calls)' },
+          { id: 'ood9', name: 'Discuss extensibility: what changes if a new type/rule is added? Which pattern absorbs it?' },
+          { id: 'ood10', name: 'Call out concurrency, validation and error handling in your design' },
+          { id: 'ood11', name: 'Know the difference between LLD/OOD and HLD (system design) interviews and what each one grades', note: 'LLD: classes, responsibilities, patterns, code quality. HLD: services, storage, scaling' },
+        ],
+      },
+      {
+        id: 'ood-oop',
+        title: 'OOP Fundamentals',
+        items: [
+          { id: 'ood12', name: 'Explain the four pillars: encapsulation, abstraction, inheritance, polymorphism — with code examples' },
+          { id: 'ood13', name: 'Composition vs. inheritance — when to use each? Why "favour composition over inheritance"?' },
+          { id: 'ood14', name: 'Interface vs. abstract class — differences and when to choose each (Java/C#/TS)' },
+          { id: 'ood15', name: 'Compile-time (overloading) vs. runtime (overriding) polymorphism' },
+          { id: 'ood16', name: 'Association vs. aggregation vs. composition — explain with examples', note: 'Library has Books (aggregation); Order has OrderLines (composition)' },
+          { id: 'ood17', name: 'Value objects vs. entities — identity vs. equality by value', note: 'Money, Address, ISBN are value objects; Member, Loan are entities' },
+          { id: 'ood18', name: 'Immutability: why make objects immutable and how (final fields, no setters, defensive copies)' },
+          { id: 'ood19', name: 'Implement equals() and hashCode() correctly; what breaks if they are inconsistent?' },
+          { id: 'ood20', name: 'Coupling and cohesion — how to measure and improve them in a class design' },
+          { id: 'ood21', name: 'Explain dependency injection and why it makes classes testable' },
+        ],
+      },
+      {
+        id: 'ood-principles',
+        title: 'SOLID & Design Principles',
+        items: [
+          { id: 'ood22', name: 'S — Single Responsibility Principle: explain with a violating and a fixed example' },
+          { id: 'ood23', name: 'O — Open/Closed Principle: extend behaviour without modifying existing code', note: 'e.g. new FineStrategy without touching LoanService' },
+          { id: 'ood24', name: 'L — Liskov Substitution Principle: the Rectangle/Square problem and how to avoid it' },
+          { id: 'ood25', name: 'I — Interface Segregation Principle: split fat interfaces' },
+          { id: 'ood26', name: 'D — Dependency Inversion Principle: depend on abstractions, not concretions' },
+          { id: 'ood27', name: 'DRY, KISS, YAGNI — and when over-applying them hurts' },
+          { id: 'ood28', name: 'Law of Demeter ("don\'t talk to strangers") — spot violations like a.getB().getC().do()' },
+          { id: 'ood29', name: 'Tell, Don\'t Ask — keep behaviour next to the data it uses (avoid anemic models)' },
+        ],
+      },
+      {
+        id: 'ood-creational',
+        title: 'Design Patterns — Creational',
+        items: [
+          { id: 'ood30', name: 'Singleton — implement a thread-safe version; why is it often considered an anti-pattern?', note: 'Double-checked locking, enum singleton, or let the DI container manage the scope' },
+          { id: 'ood31', name: 'Factory Method vs. Abstract Factory — differences and examples', note: 'e.g. PaymentProcessorFactory.create(type)' },
+          { id: 'ood32', name: 'Builder — when constructors have many optional params', note: 'e.g. Book.builder().isbn(..).title(..).build()' },
+          { id: 'ood33', name: 'Prototype — cloning objects; shallow vs. deep copy' },
+          { id: 'ood34', name: 'Object Pool — reuse expensive objects (connections, threads)' },
+        ],
+      },
+      {
+        id: 'ood-structural',
+        title: 'Design Patterns — Structural',
+        items: [
+          { id: 'ood35', name: 'Adapter — wrap an incompatible interface (e.g. third-party payment gateway)' },
+          { id: 'ood36', name: 'Decorator — add behaviour dynamically (e.g. logging/retry around a service)' },
+          { id: 'ood37', name: 'Facade — simple entry point over a complex subsystem' },
+          { id: 'ood38', name: 'Proxy — lazy loading, access control, caching, remote proxy' },
+          { id: 'ood39', name: 'Composite — tree structures treated uniformly (file system, menu, org chart)' },
+          { id: 'ood40', name: 'Bridge and Flyweight — what problem does each solve?' },
+        ],
+      },
+      {
+        id: 'ood-behavioral',
+        title: 'Design Patterns — Behavioral',
+        items: [
+          { id: 'ood41', name: 'Strategy — swap algorithms at runtime', note: 'e.g. FineCalculationStrategy, PricingStrategy, ParkingFeeStrategy' },
+          { id: 'ood42', name: 'Observer — publish/subscribe inside a process', note: 'e.g. notify members when a reserved book becomes available' },
+          { id: 'ood43', name: 'State — replace big if/else on status with state objects', note: 'Vending machine, elevator, order lifecycle' },
+          { id: 'ood44', name: 'Command — encapsulate a request (undo/redo, queues, audit log)' },
+          { id: 'ood45', name: 'Chain of Responsibility — pipeline of handlers/validators', note: 'e.g. payment validation chain, ATM cash dispenser' },
+          { id: 'ood46', name: 'Template Method — fixed algorithm skeleton with overridable steps' },
+          { id: 'ood47', name: 'Iterator, Mediator, Memento, Visitor — know what each is for and one example' },
+          { id: 'ood48', name: 'Pick the right pattern: map 5 common requirements to patterns and justify the choice' },
+        ],
+      },
+      {
+        id: 'ood-modeling',
+        title: 'Entity & Data Modeling',
+        items: [
+          { id: 'ood49', name: 'Separate a catalogue entry from its physical copies', note: 'Book { isbn, title, authors, coverImg, description } vs. BookItem { barcode, book, status, location }' },
+          { id: 'ood50', name: 'Model many-to-many relationships in objects and in tables', note: 'Book ↔ Author; join table book_authors(book_id, author_id)' },
+          { id: 'ood51', name: 'Model history/transactions as their own entities instead of mutable fields', note: 'Loan { id, member, bookItem, borrowedAt, dueAt, returnedAt } rather than book.borrower' },
+          { id: 'ood52', name: 'Choose IDs: natural keys (ISBN) vs. surrogate keys (UUID/sequence) — trade-offs' },
+          { id: 'ood53', name: 'Use enums for statuses/types and know when an enum should become a class hierarchy' },
+          { id: 'ood54', name: 'Map the class model to a relational schema (tables, FKs, indexes)' },
+          { id: 'ood55', name: 'Design DTOs/API contracts separately from domain entities — why?' },
+          { id: 'ood56', name: 'Represent money, time and quantities safely', note: 'BigDecimal/minor units + currency, Instant/time zones, never float for money' },
+          { id: 'ood57', name: 'Soft delete vs. hard delete; auditing fields (createdAt, updatedAt, version)' },
+        ],
+      },
+      {
+        id: 'ood-concurrency',
+        title: 'Concurrency in LLD',
+        items: [
+          { id: 'ood58', name: 'Prevent double booking / double checkout of the same item', note: 'Locks, compare-and-set on status, DB unique constraint, optimistic locking with version' },
+          { id: 'ood59', name: 'Optimistic vs. pessimistic locking — when to use each' },
+          { id: 'ood60', name: 'Make a class thread-safe: synchronized, locks, atomic types, concurrent collections, immutability' },
+          { id: 'ood61', name: 'Implement producer–consumer with a blocking queue' },
+          { id: 'ood62', name: 'Temporary holds with expiry (seat/room reservation timeouts)' },
+          { id: 'ood63', name: 'Idempotency keys for operations that may be retried (payments, checkouts)' },
+        ],
+      },
+      {
+        id: 'ood-problems',
+        title: 'Classic LLD Problems',
+        items: [
+          { id: 'ood64', name: 'Design a Library Management System', note: 'Book vs. BookItem, Member, Librarian, Loan, Reservation, Fine; checkout/return/renew/reserve; max books per member; fine strategy; notify on availability' },
+          { id: 'ood65', name: 'Design a Parking Lot', note: 'Levels, spot types (compact/large/EV), vehicle types, tickets, fee strategy, entry/exit gates, concurrency on spot allocation' },
+          { id: 'ood66', name: 'Design an Elevator System', note: 'Elevator state machine, request scheduling strategy (SCAN/LOOK), multiple cars, controller' },
+          { id: 'ood67', name: 'Design a Vending Machine', note: 'State pattern (idle, has-money, dispensing), inventory, change-making' },
+          { id: 'ood68', name: 'Design an ATM', note: 'Card/PIN auth, accounts, transactions, cash dispenser (chain of responsibility for notes), states' },
+          { id: 'ood69', name: 'Design a Movie Ticket Booking System (e.g. BookMyShow)', note: 'Cinema, Screen, Show, Seat, Booking; seat hold with timeout; prevent double booking' },
+          { id: 'ood70', name: 'Design a Hotel / Meeting Room Reservation System', note: 'Availability search, overlapping intervals, cancellation policy' },
+          { id: 'ood71', name: 'Design a Payment System / Payment Orchestrator (LLD)', note: 'Payment, PaymentMethod, Processor adapters, state machine, idempotency, retries, ledger entries' },
+          { id: 'ood72', name: 'Design an Online Shopping Cart & Order flow', note: 'Product, Cart, CartItem, Order, Inventory reservation, pricing/discount strategy, order states' },
+          { id: 'ood73', name: 'Design Splitwise (expense sharing)', note: 'Users, groups, expenses, split strategies (equal/exact/percent), balance simplification' },
+          { id: 'ood74', name: 'Design an LRU Cache (and LFU / TTL variants)', note: 'HashMap + doubly linked list, O(1) get/put, thread-safety' },
+          { id: 'ood75', name: 'Design an in-memory Rate Limiter class', note: 'Token bucket / sliding window, per-key state, pluggable algorithm' },
+          { id: 'ood76', name: 'Design a Logger / Logging framework', note: 'Levels, appenders/sinks, formatters, chain of responsibility, async writing' },
+          { id: 'ood77', name: 'Design a Notification Service (in-process)', note: 'Channels (email/SMS/push) via strategy, templates, observer, retry' },
+          { id: 'ood78', name: 'Design an in-memory File System', note: 'Composite pattern for files/directories, path resolution, ls/mkdir/write/read' },
+          { id: 'ood79', name: 'Design a Task Scheduler / Job Queue', note: 'Priority queue by run time, recurring jobs, worker threads, cancellation' },
+          { id: 'ood80', name: 'Design Tic-Tac-Toe / Snake & Ladder / Chess', note: 'Board, Player, Piece hierarchy, move validation, game state, turn management' },
+          { id: 'ood81', name: 'Design a Ride-Sharing app (LLD)', note: 'Rider, Driver, Trip states, matching strategy, fare strategy' },
+          { id: 'ood82', name: 'Design Stack Overflow (LLD)', note: 'Question, Answer, Comment, Vote, Tag, reputation rules' },
+          { id: 'ood83', name: 'Design a Pub-Sub / in-memory Message Broker', note: 'Topics, subscribers, offsets, delivery guarantees, thread-safety' },
+        ],
+      },
+    ],
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // 5. MICROSERVICES
   // ══════════════════════════════════════════════════════════════════════════════
   microservices: {
     sections: [
@@ -560,7 +706,7 @@ export const TOPICS_DATA = {
   },
 
   // ══════════════════════════════════════════════════════════════════════════════
-  // 5. DATABASES
+  // 6. DATABASES
   // ══════════════════════════════════════════════════════════════════════════════
   databases: {
     sections: [
@@ -726,7 +872,7 @@ export const TOPICS_DATA = {
   },
 
   // ══════════════════════════════════════════════════════════════════════════════
-  // 6. COMPUTER SCIENCE FUNDAMENTALS
+  // 7. COMPUTER SCIENCE FUNDAMENTALS
   // ══════════════════════════════════════════════════════════════════════════════
   'cs-fundamentals': {
     sections: [
@@ -958,7 +1104,7 @@ export const TOPICS_DATA = {
   },
 
   // ══════════════════════════════════════════════════════════════════════════════
-  // 7. MATHEMATICS & PROBABILITY
+  // 8. MATHEMATICS & PROBABILITY
   // ══════════════════════════════════════════════════════════════════════════════
   math: {
     sections: [

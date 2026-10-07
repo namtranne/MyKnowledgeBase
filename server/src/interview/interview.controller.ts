@@ -11,6 +11,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { InterviewService } from './interview.service';
 import { ResumeService } from '../llm/resume.service';
+import { TranscribeService } from '../llm/transcribe.service';
 import { CreateInterviewDto, AnswerDto } from './dto/interview.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GetUser } from '../auth/get-user.decorator';
@@ -21,7 +22,14 @@ export class InterviewController {
   constructor(
     private interview: InterviewService,
     private resume: ResumeService,
+    private transcriber: TranscribeService,
   ) {}
+
+  // Feature flags for the client (declared before ':id' routes).
+  @Get('config')
+  config() {
+    return { aiTranscription: this.transcriber.enabled };
+  }
 
   // Parse an uploaded resume (PDF/DOCX) into text.
   @Post('resume')
@@ -47,6 +55,22 @@ export class InterviewController {
     @Body() dto: AnswerDto,
   ) {
     return this.interview.answer(userId, id, dto.answer);
+  }
+
+  // Transcribe a recorded voice answer (multipart "audio"). The session's
+  // role, resume terms and current question are used as a vocabulary hint.
+  @Post(':id/transcribe')
+  @UseInterceptors(
+    FileInterceptor('audio', { limits: { fileSize: 24 * 1024 * 1024 } }),
+  )
+  async transcribe(
+    @GetUser('userId') userId: string,
+    @Param('id') id: string,
+    @UploadedFile() audio: any,
+  ) {
+    const hint = await this.interview.transcriptionHint(userId, id);
+    const text = await this.transcriber.transcribe(audio, hint);
+    return { text };
   }
 
   // Force-end the interview and get the evaluation.

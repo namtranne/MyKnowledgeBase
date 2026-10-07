@@ -4,11 +4,12 @@ import {
   Delete,
   Get,
   Param,
+  Post,
   Put,
   UseGuards,
 } from '@nestjs/common';
 import { ChecklistService } from './checklist.service';
-import { UpsertItemDto } from './dto/checklist.dto';
+import { GradeItemDto, UpsertItemDto } from './dto/checklist.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GetUser } from '../auth/get-user.decorator';
 
@@ -33,7 +34,17 @@ export class ChecklistController {
     return this.checklist.upsertItem(userId, itemId, dto);
   }
 
-  // DELETE /api/checklist/category/:categoryId -> reset a category
+  // POST /api/checklist/item/:itemId/grade -> AI feedback (also saves the answer)
+  @Post('item/:itemId/grade')
+  grade(
+    @GetUser('userId') userId: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: GradeItemDto,
+  ) {
+    return this.checklist.gradeItem(userId, itemId, dto);
+  }
+
+    // DELETE /api/checklist/category/:categoryId -> reset a category
   @Delete('category/:categoryId')
   reset(
     @GetUser('userId') userId: string,

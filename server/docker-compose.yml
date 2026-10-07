@@ -28,6 +28,8 @@ services:
       JWT_EXPIRES_IN: "7d"
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
       ANTHROPIC_MODEL: "claude-sonnet-5"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      OPENAI_TRANSCRIBE_MODEL: "${OPENAI_TRANSCRIBE_MODEL:-gpt-4o-mini-transcribe}"
       PORT: "3001"
       CORS_ORIGIN: "http://localhost:5173"
     ports:

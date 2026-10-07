@@ -4,7 +4,7 @@ import styles from './styles.module.css';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import { api } from '../../api/client.js';
 import { useUserState } from '../../auth/UserStateContext.jsx';
-import { useSpeaker, useDictation } from './useVoice.js';
+import { useSpeaker, useDictation, useAiDictation } from './useVoice.js';
 
 const LEVELS = ['Intern', 'Junior', 'Mid', 'Senior', 'Staff', 'Principal'];
 const TYPES = [
@@ -531,9 +531,29 @@ function Live({ session, onEnded }) {
   // ── voice: interviewer TTS + candidate dictation (browser APIs, free)
   const [voiceOn, setVoiceOn] = useUserState('interview:voice-on', true);
   const speaker = useSpeaker();
-  const dictation = useDictation({
-    onFinal: (t) => t && setAnswer((a) => (a.trim() ? a.replace(/\s*$/, ' ') : '') + t),
+  const appendSpoken = useCallback(
+    (t) => t && setAnswer((a) => (a.trim() ? a.replace(/\s*$/, ' ') : '') + t),
+    []
+  );
+  // Voice answers: AI transcription (server → OpenAI) when the server has it
+  // configured, otherwise the browser's free speech recognition.
+  const [aiStt, setAiStt] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getInterviewConfig()
+      .then((c) => !cancelled && setAiStt(!!c?.aiTranscription))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const browserDictation = useDictation({ onFinal: appendSpoken });
+  const aiDictation = useAiDictation({
+    transcribe: (blob) => api.transcribeAnswer(session.id, blob),
+    onFinal: appendSpoken,
   });
+  const dictation = aiStt && aiDictation.supported ? aiDictation : browserDictation;
   const lastSpokenRef = useRef(-1);
   const [code, setCode] = useState('');
   const [codeLang, setCodeLang] = useState('python');
@@ -613,7 +633,7 @@ function Live({ session, onEnded }) {
       .filter(Boolean)
       .join('\n\n');
     if (!text || thinking || endedRef.current) return;
-    dictation.stop();
+    if (dictation.listening || dictation.busy) return; // finish the voice answer first
     speaker.stop();
     setError('');
     setAnswer('');
@@ -650,7 +670,7 @@ function Live({ session, onEnded }) {
     if (endedRef.current) return;
     if (!window.confirm('End the interview now and see your results?')) return;
     endedRef.current = true;
-    dictation.stop();
+    dictation.cancel();
     speaker.stop();
     setThinking(true);
     try {
@@ -768,8 +788,12 @@ function Live({ session, onEnded }) {
             type="button"
             className={`${styles.micBtn} ${dictation.listening ? styles.micBtnOn : ''}`}
             onClick={toggleMic}
-            disabled={thinking || remaining <= 0}
-            title={dictation.listening ? 'Stop voice input' : 'Answer by voice'}
+            disabled={thinking || dictation.busy || remaining <= 0}
+            title={
+              dictation.listening
+                ? dictation.ai ? 'Stop recording & transcribe' : 'Stop voice input'
+                : dictation.ai ? 'Answer by voice (AI transcription)' : 'Answer by voice'
+            }
             aria-pressed={dictation.listening}>
             {dictation.listening ? '⏹' : '🎤'}
           </button>
@@ -777,18 +801,32 @@ function Live({ session, onEnded }) {
         <button
           className={styles.sendBtn}
           onClick={send}
-          disabled={thinking || (!answer.trim() && !(isCoding && code.trim()))}>
+          disabled={
+            thinking ||
+            dictation.listening ||
+            dictation.busy ||
+            (!answer.trim() && !(isCoding && code.trim()))
+          }>
           Send
         </button>
       </div>
-      {dictation.listening && (
+      {dictation.listening && dictation.ai && (
+        <div className={styles.dictation}>
+          <span className={styles.recDot} /> Recording {fmt(dictation.elapsed)} — press ⏹ when
+          you’re done and the text will appear in the box.
+        </div>
+      )}
+      {dictation.busy && (
+        <div className={styles.dictation}>✨ Transcribing your answer…</div>
+      )}
+      {dictation.listening && !dictation.ai && (
         <div className={styles.dictation}>
           <span className={styles.recDot} /> Listening — speak your answer, then press Send.
           {dictation.interim && <em className={styles.interim}> {dictation.interim}</em>}
         </div>
       )}
       {dictation.error && <div className={styles.error}>{dictation.error}</div>}
-      {!dictation.supported && (
+      {!aiStt && !dictation.supported && (
         <span className={styles.hint}>
           Voice answers need Chrome, Edge or Safari — Firefox doesn’t support speech recognition.
         </span>

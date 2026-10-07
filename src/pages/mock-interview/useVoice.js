@@ -207,5 +207,119 @@ export function useDictation({ onFinal, lang = 'en-US' }) {
     }
   }, []);
 
-  return { supported, listening, interim, error, start, stop };
+  return { supported, listening, busy: false, elapsed: 0, interim, error, start, stop, cancel: stop, ai: false };
+}
+
+// ─── AI speech-to-text (record → server → OpenAI transcription) ─────────────
+// Same shape as useDictation, plus `busy` (transcribing) and `elapsed` (s).
+// Text arrives once per recording, after you press stop.
+
+const REC_MIME = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+const MAX_RECORDING_SEC = 5 * 60;
+
+export function useAiDictation({ transcribe, onFinal }) {
+  const supported =
+    typeof window !== 'undefined' &&
+    !!navigator.mediaDevices?.getUserMedia &&
+    typeof window.MediaRecorder !== 'undefined';
+  const [listening, setListening] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const [error, setError] = useState('');
+  const recRef = useRef(null);
+  const streamRef = useRef(null);
+  const chunksRef = useRef([]);
+  const discardRef = useRef(false);
+  const timerRef = useRef(null);
+  const startedAtRef = useRef(0);
+  const cbRef = useRef({ transcribe, onFinal });
+  cbRef.current = { transcribe, onFinal };
+
+  const cleanup = useCallback(() => {
+    clearInterval(timerRef.current);
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    recRef.current = null;
+    setListening(false);
+  }, []);
+
+  const finish = useCallback((discard) => {
+    const rec = recRef.current;
+    if (!rec) return;
+    discardRef.current = discard;
+    if (rec.state !== 'inactive') rec.stop();
+    else cleanup();
+  }, [cleanup]);
+
+  const stop = useCallback(() => finish(false), [finish]);
+  const cancel = useCallback(() => finish(true), [finish]);
+
+  const start = useCallback(async () => {
+    if (!supported || recRef.current || busy) return;
+    setError('');
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true },
+      });
+    } catch {
+      setError('Microphone permission was denied.');
+      return;
+    }
+    const mimeType = REC_MIME.find((m) => window.MediaRecorder.isTypeSupported?.(m));
+    let rec;
+    try {
+      rec = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    } catch {
+      stream.getTracks().forEach((t) => t.stop());
+      setError('Could not start recording in this browser.');
+      return;
+    }
+    streamRef.current = stream;
+    recRef.current = rec;
+    chunksRef.current = [];
+    discardRef.current = false;
+
+    rec.ondataavailable = (e) => e.data?.size && chunksRef.current.push(e.data);
+    rec.onstop = async () => {
+      const secs = (Date.now() - startedAtRef.current) / 1000;
+      const blob = new Blob(chunksRef.current, { type: rec.mimeType || mimeType || 'audio/webm' });
+      cleanup();
+      if (discardRef.current || secs < 0.6 || blob.size < 1000) return;
+      setBusy(true);
+      try {
+        const { text } = await cbRef.current.transcribe(blob);
+        if (text) cbRef.current.onFinal?.(text);
+        else setError('Didn’t catch anything — try again a bit closer to the mic.');
+      } catch (err) {
+        setError(err?.message || 'Transcription failed');
+      } finally {
+        setBusy(false);
+      }
+    };
+
+    startedAtRef.current = Date.now();
+    setElapsed(0);
+    timerRef.current = setInterval(() => {
+      const s = Math.floor((Date.now() - startedAtRef.current) / 1000);
+      setElapsed(s);
+      if (s >= MAX_RECORDING_SEC) finish(false);
+    }, 250);
+    rec.start(1000);
+    setListening(true);
+  }, [supported, busy, cleanup, finish]);
+
+  // Release the mic if the component unmounts mid-recording.
+  useEffect(() => () => {
+    discardRef.current = true;
+    try {
+      recRef.current?.state !== 'inactive' && recRef.current?.stop();
+    } catch {
+      /* ignore */
+    }
+    clearInterval(timerRef.current);
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+  }, []);
+
+  return { supported, listening, busy, elapsed, interim: '', error, start, stop, cancel, ai: true };
 }
