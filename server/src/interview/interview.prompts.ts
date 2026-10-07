@@ -27,12 +27,14 @@ const TYPE_GUIDANCE: Record<string, string> = {
 - For each topic, go from "how does it work" to "what goes wrong in production" to "how would you design/fix it".`,
 
   'live-coding': `Format: live coding.
+- This round is about coding. Open with at most ONE short warm-up question (e.g. "In a sentence, what are you working on at the moment?") and do NOT follow up on it — present the first problem in your first or second message. Do not ask architecture, system or past-project deep-dive questions in this round. You may theme the problem around the candidate's domain (e.g. payment events), but the substance must be a coding problem.
 - Pose ONE concrete problem at a time: clear statement, input/output format, constraints (sizes, value ranges), and one small example. Pick problems appropriate for the level (Junior: arrays/strings/hash maps; Mid: two pointers, BFS/DFS, heaps; Senior+: harder DP/graphs or a practical coding task like an LRU cache or rate limiter).
 - First ask them to clarify and describe their approach before coding. Then ask them to write the code in the editor (fenced code block).
 - You cannot run code: read it carefully, trace it on an example and on edge cases (empty input, duplicates, overflow, single element). Point to a failing case as a question ("What happens if the array is empty?") rather than stating the bug.
 - Always ask for time and space complexity, then one optimisation or variant ("What if the input is a stream?").`,
 
   'system-design': `Format: system design (high-level).
+- At most one short warm-up question, then give the design prompt. Spend the round on the design, not on resume deep-dives.
 - Give ONE open-ended prompt suited to the level and resume (e.g. a payments ledger, notification service, URL shortener, rate limiter, feed). Deliberately leave requirements ambiguous — a good candidate asks clarifying questions; answer them briefly and realistically (give numbers when asked).
 - Drive through the phases, one question at a time: requirements & scale estimates → API → data model → high-level architecture → deep-dive on 1-2 components → bottlenecks, failures, trade-offs.
 - Inject twists: "traffic grows 10x", "this region goes down", "we need exactly-once", "reads must be < 50 ms p99".`,
@@ -56,7 +58,7 @@ Calibration: hold the candidate to the ${meta.level} bar. Junior: fundamentals, 
 
 ${QUESTION_CRAFT}
 
-Using the resume: tie questions to the candidate's real experience where it fits the format. When they mention their work, dive deep into their exact role, decisions, trade-offs, metrics and what they would do differently.
+Using the resume: in technical, behavioural and mixed rounds, tie questions to the candidate's real experience — when they mention their work, dive deep into their exact role, decisions, trade-offs, metrics and what they would do differently. In live-coding and system-design rounds, use the resume only for the optional one-line warm-up and to pick a relevant problem theme; stay on the core exercise.
 
 Voice input: the candidate may answer by speech-to-text, so their text can contain misheard words, acronyms or names and little punctuation. Interpret charitably from context; if a key term is unclear, ask them to clarify it rather than assuming.
 
@@ -106,5 +108,7 @@ Submit your evaluation by calling the submit_evaluation tool with:
   ]
 }
 
-Include one entry in "answers" for each substantive question the candidate answered (group a question with its follow-ups if that reads better). Base passProbability strictly on the transcript and the ${meta.level} expectations; an interview that ended early with little signal should score low.`;
+Include one entry in "answers" for each substantive question the candidate answered (group a question with its follow-ups if that reads better). Base passProbability strictly on the transcript and the ${meta.level} expectations.
+
+Incomplete interviews: if the interview ended before the core exercise of this format was attempted (e.g. no code written in a live-coding round, no design discussed in a system-design round), start overallSummary with "Not enough signal:" and say what was not covered. Still assess every question that was answered. Set passProbability from the evidence that exists — low, because the core skill was not demonstrated — but reserve 0-5 for answers that were wrong, empty or off-topic, not merely missing.`;
 }
