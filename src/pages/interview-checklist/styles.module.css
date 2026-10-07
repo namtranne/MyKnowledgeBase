@@ -870,3 +870,148 @@
     animation: none;
   }
 }
+
+/* ── My Interview tab ── */
+.myWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-bottom: 1.2rem;
+}
+.myCard {
+  background: #12141f;
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.myTitle {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #e5e7eb;
+}
+.mySummary {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.myRole {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #e5e7eb;
+  margin: 0.15rem 0 0.25rem;
+}
+.myLevel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+}
+.myCvLine {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+.myCvPreview {
+  margin: 0;
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-size: 0.78rem;
+  color: #9ca3af;
+  background: #0c0e17;
+  border-radius: 8px;
+  padding: 0.7rem;
+}
+.myRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+.myField {
+  flex: 1;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.myLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9ca3af;
+}
+.myInput {
+  width: 100%;
+  box-sizing: border-box;
+  background: #0c0e17;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  color: #e5e7eb;
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+  margin-top: 0.35rem;
+}
+.myField .myInput {
+  margin-top: 0;
+}
+.myInput:focus {
+  border-color: #fbbf24;
+}
+.myCvActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+.myFileBtn {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #e5e7eb;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+}
+.myFileBtn:hover {
+  border-color: #fbbf24;
+}
+.myLinkBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #00f0ff;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.myMuted {
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+.itemTools {
+  display: flex;
+  gap: 0.25rem;
+  align-self: flex-start;
+}
+.itemToolBtn {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.15rem 0.35rem;
+}
+.itemToolBtn:hover {
+  color: #e5e7eb;
+  border-color: rgba(255, 255, 255, 0.15);
+}

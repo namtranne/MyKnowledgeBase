@@ -103,7 +103,12 @@ export class ChecklistService {
     return { itemId, answer: dto.answer, feedback, gradedAt };
   }
 
-  // Clear all progress for a single category (used by the "Reset" button).
+  async removeItem(userId: string, itemId: string) {
+    await this.prisma.itemState.deleteMany({ where: { userId, itemId } });
+    return { ok: true };
+  }
+
+    // Clear all progress for a single category (used by the "Reset" button).
   async resetCategory(userId: string, categoryId: string) {
     await this.prisma.itemState.deleteMany({ where: { userId, categoryId } });
     return { ok: true };

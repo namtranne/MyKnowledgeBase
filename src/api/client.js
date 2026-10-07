@@ -170,7 +170,9 @@ export const api = {
       method: 'POST',
       body: payload,
     }),
-  resetCategory: (categoryId) =>
+  deleteChecklistItem: (itemId) =>
+    request(`/checklist/item/${encodeURIComponent(itemId)}`, { method: 'DELETE' }),
+    resetCategory: (categoryId) =>
     request(`/checklist/category/${encodeURIComponent(categoryId)}`, {
       method: 'DELETE',
     }),

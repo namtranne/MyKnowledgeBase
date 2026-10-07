@@ -16,6 +16,20 @@ import { useDictation, useAiDictation } from '../mock-interview/useVoice.js';
 
 const GRADE_LEVELS = ['Intern', 'Junior', 'Mid', 'Senior', 'Staff', 'Principal'];
 
+// "My Interview": your own target role + CV + questions you write yourself.
+// It behaves like a category whose single section is built from your questions,
+// so progress, answers, voice and AI grading all work the same way.
+const MY_CAT = { id: 'my-interview', label: '⭐ My Interview', color: '#fbbf24' };
+const ALL_CATS = [MY_CAT, ...CATEGORIES];
+const MY_SECTION_ID = 'my-questions';
+
+function newQuestionId() {
+  const rand =
+    (typeof crypto !== 'undefined' && crypto.randomUUID?.()) ||
+    `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+  return `mq-${rand}`;
+}
+
 // Shared by every AnswerBox: grading, voice config, auth.
 const AnswerCtx = createContext(null);
 
@@ -60,7 +74,7 @@ function clearLocal(categoryId) {
 // Push signed-out (guest) progress into the user's account for items the
 // server doesn't have yet. Mutates `grouped` so the UI shows merged state.
 async function uploadGuestChecklist(grouped) {
-  for (const cat of CATEGORIES) {
+  for (const cat of ALL_CATS) {
     const localP = loadProgress(cat.id);
     const localA = loadAnswers(cat.id);
     const ids = new Set([...Object.keys(localP), ...Object.keys(localA)]);
@@ -369,7 +383,7 @@ function AnswerBox({ item, sectionTitle, value, onSave }) {
 
 // ─── Section ─────────────────────────────────────────────────────────────────
 
-function Section({ section, color, progress, answers, onToggle, onSaveAnswer }) {
+function Section({ section, color, progress, answers, onToggle, onSaveAnswer, onEditItem, onDeleteItem, emptyText }) {
   const [isOpen, setIsOpen] = useState(true);
 
   const solved = useMemo(
@@ -393,6 +407,9 @@ function Section({ section, color, progress, answers, onToggle, onSaveAnswer }) 
 
       {isOpen && (
         <div className={styles.sectionContent}>
+          {section.items.length === 0 && emptyText && (
+            <p className={styles.emptyState}>{emptyText}</p>
+          )}
           {section.items.map((item) => (
             <ChecklistItem
               key={item.id}
@@ -402,6 +419,8 @@ function Section({ section, color, progress, answers, onToggle, onSaveAnswer }) 
               onToggle={() => onToggle(item.id)}
               sectionTitle={section.title}
               onSaveAnswer={(text) => onSaveAnswer(item.id, text)}
+              onEdit={onEditItem ? (patch) => onEditItem(item.id, patch) : undefined}
+              onDelete={onDeleteItem ? () => onDeleteItem(item.id) : undefined}
             />
           ))}
         </div>
@@ -412,7 +431,53 @@ function Section({ section, color, progress, answers, onToggle, onSaveAnswer }) 
 
 // ─── Checklist Item ────────────────────────────────────────────────────────────
 
-function ChecklistItem({ item, checked, answer, sectionTitle, onToggle, onSaveAnswer }) {
+function ChecklistItem({ item, checked, answer, sectionTitle, onToggle, onSaveAnswer, onEdit, onDelete }) {
+  const [editing, setEditing] = useState(false);
+  const [qDraft, setQDraft] = useState(item.name);
+  const [nDraft, setNDraft] = useState(item.note || '');
+
+  function startEdit() {
+    setQDraft(item.name);
+    setNDraft(item.note || '');
+    setEditing(true);
+  }
+  function saveEdit() {
+    const q = qDraft.trim();
+    if (!q) return;
+    onEdit({ question: q, note: nDraft.trim() });
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <div className={styles.checklistItem}>
+        <div className={styles.itemContent}>
+          <textarea
+            className={styles.answerInput}
+            value={qDraft}
+            onChange={(e) => setQDraft(e.target.value)}
+            rows={2}
+            autoFocus
+          />
+          <input
+            className={styles.myInput}
+            value={nDraft}
+            placeholder="Note (optional) — e.g. asked in round 1, hint, source"
+            onChange={(e) => setNDraft(e.target.value)}
+          />
+          <div className={styles.answerActions}>
+            <button type="button" className={styles.answerSaveBtn} onClick={saveEdit} disabled={!qDraft.trim()}>
+              Save question
+            </button>
+            <button type="button" className={styles.myLinkBtn} onClick={() => setEditing(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.checklistItem}>
       <input
@@ -433,6 +498,16 @@ function ChecklistItem({ item, checked, answer, sectionTitle, onToggle, onSaveAn
         )}
         <AnswerBox item={item} sectionTitle={sectionTitle} value={answer} onSave={onSaveAnswer} />
       </div>
+      {(onEdit || onDelete) && (
+        <div className={styles.itemTools}>
+          {onEdit && (
+            <button type="button" className={styles.itemToolBtn} onClick={startEdit} title="Edit question">✎</button>
+          )}
+          {onDelete && (
+            <button type="button" className={styles.itemToolBtn} onClick={onDelete} title="Delete question">🗑</button>
+          )}
+        </div>
+      )}
       {item.resource && (
         <a
           href={item.resource}
@@ -442,6 +517,235 @@ function ChecklistItem({ item, checked, answer, sectionTitle, onToggle, onSaveAn
           Ref
         </a>
       )}
+    </div>
+  );
+}
+
+// ─── My Interview: profile + add question ──────────────────────────────────────
+
+function MyInterviewProfile({ profile, onSave, isAuthenticated, openAuth }) {
+  const [role, setRole] = useState(profile.role || '');
+  const [level, setLevel] = useState(profile.level || 'Mid');
+  const [cvText, setCvText] = useState(profile.cvText || '');
+  const [cvFileName, setCvFileName] = useState(profile.cvFileName || '');
+  const [showCv, setShowCv] = useState(false);
+  const [pasting, setPasting] = useState(false);
+  const [parsing, setParsing] = useState(false);
+  const [error, setError] = useState('');
+  const [saved, setSaved] = useState(false);
+  const [editing, setEditing] = useState(!profile.role);
+
+  // Re-sync when the stored profile arrives (e.g. after sign-in).
+  useEffect(() => {
+    setRole(profile.role || '');
+    setLevel(profile.level || 'Mid');
+    setCvText(profile.cvText || '');
+    setCvFileName(profile.cvFileName || '');
+    if (profile.role) setEditing(false);
+  }, [profile.role, profile.level, profile.cvText, profile.cvFileName]);
+
+  async function handleFile(e) {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (!f) return;
+    if (!isAuthenticated) {
+      openAuth();
+      return;
+    }
+    setError('');
+    setParsing(true);
+    try {
+      const { text } = await api.parseResume(f);
+      setCvText(text);
+      setCvFileName(f.name);
+      setPasting(false);
+    } catch (err) {
+      setError(err.message || 'Could not read that file — try pasting the text instead');
+    } finally {
+      setParsing(false);
+    }
+  }
+
+  function save() {
+    if (!role.trim()) {
+      setError('Enter the position you are preparing for');
+      return;
+    }
+    setError('');
+    onSave({
+      role: role.trim(),
+      level,
+      cvText: cvText.trim().slice(0, 15000),
+      cvFileName: cvFileName || (cvText.trim() ? 'Pasted text' : ''),
+      updatedAt: new Date().toISOString(),
+    });
+    setEditing(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  }
+
+  if (!editing) {
+    return (
+      <div className={styles.myCard}>
+        <div className={styles.mySummary}>
+          <div>
+            <span className={styles.myLabel}>Preparing for</span>
+            <div className={styles.myRole}>
+              {profile.role} <span className={styles.myLevel}>{profile.level}</span>
+            </div>
+            <div className={styles.myCvLine}>
+              {profile.cvText ? (
+                <>
+                  📄 {profile.cvFileName || 'CV'} · {profile.cvText.length.toLocaleString()} chars{' '}
+                  <button type="button" className={styles.myLinkBtn} onClick={() => setShowCv((v) => !v)}>
+                    {showCv ? 'Hide' : 'View'}
+                  </button>
+                </>
+              ) : (
+                <span className={styles.myMuted}>No CV attached</span>
+              )}
+              {saved && <span className={styles.answerSaved}> ✓ Saved</span>}
+            </div>
+          </div>
+          <button type="button" className={styles.answerSaveBtn} onClick={() => setEditing(true)}>
+            Edit
+          </button>
+        </div>
+        {showCv && profile.cvText && <pre className={styles.myCvPreview}>{profile.cvText}</pre>}
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.myCard}>
+      <h3 className={styles.myTitle}>Your target interview</h3>
+      <div className={styles.myRow}>
+        <label className={styles.myField}>
+          <span className={styles.myLabel}>Position</span>
+          <input
+            className={styles.myInput}
+            value={role}
+            placeholder="e.g. Senior Backend Engineer (Payments)"
+            onChange={(e) => setRole(e.target.value)}
+          />
+        </label>
+        <label className={styles.myField} style={{ maxWidth: 180 }}>
+          <span className={styles.myLabel}>Level</span>
+          <select className={styles.myInput} value={level} onChange={(e) => setLevel(e.target.value)}>
+            {GRADE_LEVELS.map((l) => (
+              <option key={l} value={l}>{l}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className={styles.myField}>
+        <span className={styles.myLabel}>CV</span>
+        <div className={styles.myCvActions}>
+          <label className={styles.myFileBtn}>
+            {parsing ? 'Reading…' : cvText ? 'Replace file (PDF/DOCX)' : 'Upload PDF/DOCX'}
+            <input type="file" accept=".pdf,.docx" onChange={handleFile} hidden disabled={parsing} />
+          </label>
+          <button type="button" className={styles.myLinkBtn} onClick={() => setPasting((v) => !v)}>
+            {pasting ? 'Hide text' : cvText ? 'Edit text' : 'or paste text'}
+          </button>
+          {cvText && (
+            <>
+              <span className={styles.myMuted}>
+                ✓ {cvFileName || 'Pasted text'} · {cvText.length.toLocaleString()} chars
+              </span>
+              <button
+                type="button"
+                className={styles.myLinkBtn}
+                onClick={() => {
+                  setCvText('');
+                  setCvFileName('');
+                }}>
+                Remove
+              </button>
+            </>
+          )}
+        </div>
+        {!isAuthenticated && (
+          <span className={styles.myMuted}>Sign in to upload a file — or paste the text.</span>
+        )}
+        {pasting && (
+          <textarea
+            className={styles.answerInput}
+            rows={8}
+            value={cvText}
+            placeholder="Paste your CV text here"
+            onChange={(e) => {
+              setCvText(e.target.value);
+              if (!cvFileName) setCvFileName('Pasted text');
+            }}
+          />
+        )}
+      </div>
+
+      {error && <span className={styles.answerError}>{error}</span>}
+      <div className={styles.answerActions}>
+        <button type="button" className={styles.answerSaveBtn} onClick={save} disabled={parsing}>
+          Save
+        </button>
+        {profile.role && (
+          <button type="button" className={styles.myLinkBtn} onClick={() => setEditing(false)}>
+            Cancel
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AddQuestion({ onAdd }) {
+  const [q, setQ] = useState('');
+  const [note, setNote] = useState('');
+  const [showNote, setShowNote] = useState(false);
+
+  function add() {
+    const text = q.trim();
+    if (!text) return;
+    onAdd({ question: text, note: note.trim() });
+    setQ('');
+    setNote('');
+    setShowNote(false);
+  }
+
+  return (
+    <div className={styles.myCard}>
+      <h3 className={styles.myTitle}>Add a question you’re preparing</h3>
+      <textarea
+        className={styles.answerInput}
+        rows={2}
+        value={q}
+        placeholder="e.g. Walk me through the TLM payment flow and your role in it (Enter to add)"
+        onChange={(e) => setQ(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            add();
+          }
+        }}
+      />
+      {showNote && (
+        <input
+          className={styles.myInput}
+          value={note}
+          placeholder="Note (optional) — e.g. asked in round 1, hint, source"
+          onChange={(e) => setNote(e.target.value)}
+        />
+      )}
+      <div className={styles.answerActions}>
+        <button type="button" className={styles.answerSaveBtn} onClick={add} disabled={!q.trim()}>
+          + Add question
+        </button>
+        {!showNote && (
+          <button type="button" className={styles.myLinkBtn} onClick={() => setShowNote(true)}>
+            + note
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -456,6 +760,9 @@ export default function InterviewChecklist() {
   const [answersMap, setAnswersMap] = useState({});
   const [feedbackMap, setFeedbackMap] = useState({}); // { cat: { itemId: { feedback, gradedAt } } }
   const [gradeLevel, setGradeLevel] = useUserState('checklist:grade-level', 'Mid');
+  const [myProfile, setMyProfile] = useUserState('my-interview:profile', {});
+  const [myQuestions, setMyQuestions] = useUserState('my-interview:questions', []);
+  const isMy = activeCategory === MY_CAT.id;
   const [aiStt, setAiStt] = useState(false);
 
   // AI transcription is available only when signed in and configured on the server.
@@ -476,8 +783,24 @@ export default function InterviewChecklist() {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
 
-  const categoryConfig = CATEGORIES.find((c) => c.id === activeCategory);
-  const categoryData = TOPICS_DATA[activeCategory];
+  const myData = useMemo(
+    () => ({
+      sections: [
+        {
+          id: MY_SECTION_ID,
+          title: 'My questions',
+          items: (Array.isArray(myQuestions) ? myQuestions : []).map((q) => ({
+            id: q.id,
+            name: q.question,
+            note: q.note || undefined,
+          })),
+        },
+      ],
+    }),
+    [myQuestions]
+  );
+  const categoryConfig = ALL_CATS.find((c) => c.id === activeCategory);
+  const categoryData = isMy ? myData : TOPICS_DATA[activeCategory];
   const progress = progressMap[activeCategory] || {};
   const answers = answersMap[activeCategory] || {};
 
@@ -497,7 +820,7 @@ export default function InterviewChecklist() {
           const p = {};
           const a = {};
           const f = {};
-          CATEGORIES.forEach((cat) => {
+          ALL_CATS.forEach((cat) => {
             p[cat.id] = {};
             a[cat.id] = {};
             f[cat.id] = {};
@@ -518,7 +841,7 @@ export default function InterviewChecklist() {
       }
       const p = {};
       const a = {};
-      CATEGORIES.forEach((cat) => {
+      ALL_CATS.forEach((cat) => {
         p[cat.id] = loadProgress(cat.id);
         a[cat.id] = loadAnswers(cat.id);
       });
@@ -669,7 +992,7 @@ export default function InterviewChecklist() {
     async (itemId, payload) => {
       const res = await api.gradeChecklistItem(itemId, {
         categoryId: activeCategory,
-        level: gradeLevel,
+        level: isMy ? myProfile?.level || gradeLevel : gradeLevel,
         ...payload,
       });
       setAnswersMap((prev) => ({
@@ -685,7 +1008,53 @@ export default function InterviewChecklist() {
       }));
       return res;
     },
-    [activeCategory, gradeLevel]
+    [activeCategory, gradeLevel, isMy, myProfile]
+  );
+
+  // ── My Interview: question CRUD (list stored per user via UserState)
+  const addMyQuestion = useCallback(
+    ({ question, note }) => {
+      setMyQuestions((prev) => [
+        ...(Array.isArray(prev) ? prev : []),
+        { id: newQuestionId(), question, note, createdAt: new Date().toISOString() },
+      ]);
+    },
+    [setMyQuestions]
+  );
+
+  const editMyQuestion = useCallback(
+    (id, patch) => {
+      setMyQuestions((prev) =>
+        (Array.isArray(prev) ? prev : []).map((q) => (q.id === id ? { ...q, ...patch } : q))
+      );
+    },
+    [setMyQuestions]
+  );
+
+  const deleteMyQuestion = useCallback(
+    (id) => {
+      if (!window.confirm('Delete this question and its answer?')) return;
+      setMyQuestions((prev) => (Array.isArray(prev) ? prev : []).filter((q) => q.id !== id));
+      const drop = (prev) => {
+        const cat = { ...(prev[MY_CAT.id] || {}) };
+        delete cat[id];
+        return { ...prev, [MY_CAT.id]: cat };
+      };
+      setProgressMap(drop);
+      setAnswersMap(drop);
+      setFeedbackMap(drop);
+      if (isAuthenticated) {
+        api.deleteChecklistItem(id).catch(() => {});
+      } else {
+        const p = loadProgress(MY_CAT.id);
+        const a = loadAnswers(MY_CAT.id);
+        delete p[id];
+        delete a[id];
+        saveProgress(MY_CAT.id, p);
+        saveAnswers(MY_CAT.id, a);
+      }
+    },
+    [setMyQuestions, isAuthenticated]
   );
 
   const answerCtx = useMemo(
@@ -742,7 +1111,7 @@ export default function InterviewChecklist() {
         </header>
 
         <div className={styles.categoryTabs} style={tabStyle}>
-          {CATEGORIES.map((cat) => (
+          {ALL_CATS.map((cat) => (
             <button
               key={cat.id}
               className={`${styles.categoryTab} ${
@@ -758,6 +1127,18 @@ export default function InterviewChecklist() {
             </button>
           ))}
         </div>
+
+        {isMy && (
+          <div className={styles.myWrap}>
+            <MyInterviewProfile
+              profile={myProfile || {}}
+              onSave={setMyProfile}
+              isAuthenticated={isAuthenticated}
+              openAuth={openAuth}
+            />
+            <AddQuestion onAdd={addMyQuestion} />
+          </div>
+        )}
 
         <section className={styles.dashboard}>
           <ProgressRing pct={actualPct} color={categoryConfig.color} />
@@ -796,6 +1177,11 @@ export default function InterviewChecklist() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          {isMy ? (
+            <span className={styles.levelPicker}>
+              AI grades at your target level: <strong>{myProfile?.level || gradeLevel}</strong>
+            </span>
+          ) : (
           <label className={styles.levelPicker} title="Seniority level the AI grades your answers against">
             AI grading level
             <select value={gradeLevel} onChange={(e) => setGradeLevel(e.target.value)}>
@@ -804,6 +1190,7 @@ export default function InterviewChecklist() {
               ))}
             </select>
           </label>
+          )}
         </div>
 
         {searchActive ? (
@@ -868,6 +1255,9 @@ export default function InterviewChecklist() {
               answers={answers}
               onToggle={toggle}
               onSaveAnswer={saveAnswer}
+              onEditItem={isMy ? editMyQuestion : undefined}
+              onDeleteItem={isMy ? deleteMyQuestion : undefined}
+              emptyText={isMy ? 'No questions yet — add the first one above.' : undefined}
             />
           ))
         )}

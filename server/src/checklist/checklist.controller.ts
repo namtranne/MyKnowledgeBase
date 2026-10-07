@@ -44,6 +44,12 @@ export class ChecklistController {
     return this.checklist.gradeItem(userId, itemId, dto);
   }
 
+    // DELETE /api/checklist/item/:itemId -> remove one item's state (custom questions)
+  @Delete('item/:itemId')
+  removeItem(@GetUser('userId') userId: string, @Param('itemId') itemId: string) {
+    return this.checklist.removeItem(userId, itemId);
+  }
+
     // DELETE /api/checklist/category/:categoryId -> reset a category
   @Delete('category/:categoryId')
   reset(
