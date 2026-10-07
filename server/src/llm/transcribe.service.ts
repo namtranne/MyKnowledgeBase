@@ -26,7 +26,7 @@ export class TranscribeService {
 
   /**
    * @param prompt vocabulary/context hint (names, acronyms, tech terms) —
-   *               greatly improves accuracy on things like "NAB" or "Kafka".
+   *               greatly improves accuracy on things like company acronyms or "Kafka".
    */
   async transcribe(
     file: { buffer: Buffer; mimetype: string; originalname?: string; size?: number },

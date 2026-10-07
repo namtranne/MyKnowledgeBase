@@ -279,7 +279,7 @@ Zero boilerplate. `findByStatus` works because Spring parses the method name. No
                                         └─────────────────────────────────┘
 ```
 
-**Real-world pattern** (common in TLM services): Most teams use **Spring Data JPA** for standard CRUD and **JdbcTemplate** for complex reporting queries or batch operations — both in the same project. This is perfectly fine since they share the same `DataSource` and transaction manager.
+**Real-world pattern** (common in production payment services): Most teams use **Spring Data JPA** for standard CRUD and **JdbcTemplate** for complex reporting queries or batch operations — both in the same project. This is perfectly fine since they share the same `DataSource` and transaction manager.
 
 ```java
 @Service

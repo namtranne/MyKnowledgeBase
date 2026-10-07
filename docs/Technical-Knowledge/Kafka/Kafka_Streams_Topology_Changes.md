@@ -105,7 +105,7 @@ If you comment out a processor in phase 1 but forget to update phase 2, the cust
 // Phase 2: Customizer still tries to connect it
 topology.connectProcessorAndStateStores(
     "WorkflowProcessorCommand",   // ← doesn't exist!
-    TLM_STATUS_STATE_STORE
+    PAYMENT_STATUS_STATE_STORE
 );
 ```
 
@@ -125,10 +125,10 @@ org.apache.kafka.streams.errors.TopologyException:
 
 ```java
 // ✅ CORRECT: Both are commented out together
-// topology.connectProcessorAndStateStores(COMMAND_PROCESSOR_NAME, TLM_STATUS_STATE_STORE);
+// topology.connectProcessorAndStateStores(COMMAND_PROCESSOR_NAME, PAYMENT_STATUS_STATE_STORE);
 
 // ❌ WRONG: Processor removed but connection still exists
-topology.connectProcessorAndStateStores(COMMAND_PROCESSOR_NAME, TLM_STATUS_STATE_STORE);
+topology.connectProcessorAndStateStores(COMMAND_PROCESSOR_NAME, PAYMENT_STATUS_STATE_STORE);
 ```
 
 ---
@@ -148,10 +148,10 @@ When you comment out a `builder.stream(topic, ...)` call, the topology no longer
 ### The Log Signature
 
 ```
-SubscriptionState: Assigned partition payments.tlm.payment-timeout-event-v1.sandbox-0
+SubscriptionState: Assigned partition payments.platform.payment-timeout-event-v1.sandbox-0
   for non-subscribed topic; subscription is [
-    payments.tlm.payment-enrichment-command-v2.sandbox,
-    payments.tlm.payment-internal-command-generic-v1.sandbox,
+    payments.platform.payment-enrichment-command-v2.sandbox,
+    payments.platform.payment-internal-command-generic-v1.sandbox,
     ...
   ]
 
@@ -265,7 +265,7 @@ topologyBuilder.processPaymentTimeoutEventStream(timeoutEventStream);
 
 **Second deployment attempt (after fixing customizer) — Rebalance Storm:**
 
-The topology no longer subscribed to ~8 topics (timeout events, operation status, payment status updated, enrichment, business events, SPSE rejection, etc.). During rolling deployment, old pods still subscribed to these topics, causing the `StreamsPartitionAssignor` to assign their partitions to new pods. New pods rejected the assignment → infinite rebalance loop → health check failure → container killed.
+The topology no longer subscribed to ~8 topics (timeout events, operation status, payment status updated, enrichment, business events, payment engine rejection, etc.). During rolling deployment, old pods still subscribed to these topics, causing the `StreamsPartitionAssignor` to assign their partitions to new pods. New pods rejected the assignment → infinite rebalance loop → health check failure → container killed.
 
 ### What Broke — Three Distinct Failures
 
@@ -282,7 +282,7 @@ The topology no longer subscribed to ~8 topics. During rolling deployment, old p
 We tried keeping `builder.stream(topic)` calls without downstream processing. But `topology.optimization: all` **pruned the orphaned source nodes** since they had no sinks. The optimizer restructured the sub-topologies, creating a different sub-topology layout than what the old consumer group metadata expected. The partition assignor assigned partitions from pruned topics to tasks in the wrong sub-topology:
 
 ```
-TopologyException: Invalid topology: Topic payments.tlm.payment-opsp-internal-event-v2.sandbox
+TopologyException: Invalid topology: Topic payments.platform.payment-processing-internal-event-v2.sandbox
   is unknown to the topology. This may happen if different KafkaStreams instances of the same
   application execute different Topologies.
 ```
@@ -305,8 +305,8 @@ topologyBuilder.processPsrCommandStream(commandEventStream);
 final var commandEventV2Stream = topologyBuilder.commandEventV2Stream(builder);
 topologyBuilder.forwardToV1InternalCommand(commandEventV2Stream);
 
-final var tlmInternalEventStream = internalTopologyBuilder.internalTlmEventStream(builder);
-internalTopologyBuilder.processInternalEventStream(tlmInternalEventStream);
+final var paymentInternalEventStream = internalTopologyBuilder.internalPaymentEventStream(builder);
+internalTopologyBuilder.processInternalEventStream(paymentInternalEventStream);
 
 // ❌ Don't add orphaned sources — the optimizer prunes them,
 //    which changes the sub-topology structure
@@ -317,7 +317,7 @@ internalTopologyBuilder.processInternalEventStream(tlmInternalEventStream);
 # application-sandbox.yml — new application.id to bypass stale consumer group
 kafka:
   streams:
-    application-id: payments.stream.tlm.outbound-payment-status-publisher.v2.sandbox
+    application-id: payments.stream.platform.outbound-payment-status-publisher.v2.sandbox
 ```
 
 ---
@@ -362,7 +362,7 @@ The optimized topology has a different sub-topology structure than the old topol
 4. Partitions from topics in sub-topology X (old layout) end up in tasks for sub-topology Y (new layout)
 5. Sub-topology Y doesn't know about those topics → `TopologyException`
 
-This can affect even ACTIVE topics (like `payment-opsp-internal-event-v2`) if the optimizer moved them to a different sub-topology number.
+This can affect even ACTIVE topics (like `payment-processing-internal-event-v2`) if the optimizer moved them to a different sub-topology number.
 
 ### The Only Safe Approach with Optimization Enabled
 
