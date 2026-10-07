@@ -47,7 +47,8 @@ export class TranscribeService {
       : 'webm';
 
     const form = new FormData();
-    form.append('file', new Blob([file.buffer], { type: mime }), `answer.${ext}`);
+    // Copy into a plain Uint8Array: newer TS/@types/node reject Buffer as a BlobPart.
+    form.append('file', new Blob([new Uint8Array(file.buffer)], { type: mime }), `answer.${ext}`);
     form.append('model', this.model);
     form.append('language', 'en');
     form.append('response_format', 'json');
